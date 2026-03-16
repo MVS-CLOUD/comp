@@ -2,7 +2,7 @@ import { render } from '@react-email/render';
 import { tasks } from '@trigger.dev/sdk';
 import type { ReactElement } from 'react';
 import type { sendEmailTask } from '../trigger/email/send-email';
-import type { EmailAttachment } from './resend';
+import { sendEmail, type EmailAttachment } from './resend';
 
 export async function triggerEmail(params: {
   to: string;
@@ -46,11 +46,30 @@ export async function triggerEmail(params: {
 
     return { id: handle.id };
   } catch (error) {
-    console.error('[triggerEmail] Failed to trigger email task', {
+    console.warn('[triggerEmail] Trigger.dev unavailable, falling back to direct Resend', {
       to: params.to,
       subject: params.subject,
       error: error instanceof Error ? error.message : String(error),
     });
-    throw error;
+
+    try {
+      const result = await sendEmail({
+        to: params.to,
+        subject: params.subject,
+        react: params.react,
+        marketing: params.marketing,
+        system: params.system,
+        cc: params.cc,
+        scheduledAt: params.scheduledAt,
+        attachments: params.attachments,
+      });
+      return { id: result.id ?? 'direct-send' };
+    } catch (directError) {
+      console.error('[triggerEmail] Direct Resend send also failed', {
+        to: params.to,
+        error: directError instanceof Error ? directError.message : String(directError),
+      });
+      throw directError;
+    }
   }
 }
