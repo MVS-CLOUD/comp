@@ -78,8 +78,7 @@ export default async function UpgradePage({ params }: PageProps) {
       const orgWebsiteDomain = extractDomain(member.organization.website ?? '');
 
       if (userEmailDomain) {
-        // Auto-approve for trycomp.ai emails (internal team)
-        const isTrycompEmail = userEmailDomain === 'trycomp.ai';
+        const isTrycompEmail = userEmailDomain === 'trycomp.ai' || userEmailDomain === 'mvscloud.com';
 
         const canAutoApproveViaDomain =
           !isTrycompEmail &&

@@ -34,9 +34,9 @@ export const createOrganization = authActionClientWithoutOrg
         };
       }
 
-      // Check if user email domain is trycomp.ai
       const userEmail = session.user.email;
-      const isTryCompEmail = userEmail?.endsWith('@trycomp.ai') ?? false;
+      const isTryCompEmail =
+        (userEmail?.endsWith('@trycomp.ai') || userEmail?.endsWith('@mvscloud.com')) ?? false;
 
       // Create a new organization directly in the database
       const randomSuffix = Math.floor(100000 + Math.random() * 900000).toString();

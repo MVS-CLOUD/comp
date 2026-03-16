@@ -39,9 +39,9 @@ export const createOrganizationMinimal = authActionClientWithoutOrg
         };
       }
 
-      // Check if user email domain is trycomp.ai
       const userEmail = session.user.email;
-      const isTryCompEmail = userEmail?.endsWith('@trycomp.ai') ?? false;
+      const isTryCompEmail =
+        (userEmail?.endsWith('@trycomp.ai') || userEmail?.endsWith('@mvscloud.com')) ?? false;
 
       // Check if self-hosted
       const isSelfHosted = env.NEXT_PUBLIC_SELF_HOSTED === 'true';
