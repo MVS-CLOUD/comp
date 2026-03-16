@@ -19,26 +19,20 @@ import { s3Client } from '@/app/s3';
 
 @Injectable()
 export class AttachmentsService {
-  private s3Client: S3Client;
+  private s3Client: S3Client | null;
   private bucketName: string;
   private readonly MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
   private readonly SIGNED_URL_EXPIRY = 900; // 15 minutes
 
   constructor() {
-    // AWS configuration is validated at startup via ConfigModule
-    // Safe to access environment variables directly since they're validated
-    this.bucketName = process.env.APP_AWS_BUCKET_NAME!;
+    this.bucketName = process.env.APP_AWS_BUCKET_NAME || '';
+    this.s3Client = s3Client;
 
-    if (!s3Client) {
-      console.error(
-        'S3 Client is not initialized. Check AWS S3 configuration.',
-      );
-      throw new Error(
-        'S3 Client is not initialized. Check AWS S3 configuration.',
+    if (!this.s3Client) {
+      console.warn(
+        'S3 Client is not initialized. Attachment features will be unavailable.',
       );
     }
-
-    this.s3Client = s3Client;
   }
 
   /**
