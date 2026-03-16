@@ -154,11 +154,11 @@ export const auth = betterAuth({
         enabled: true,
         domain: cookieDomain,
       },
-      defaultCookieAttributes: {
-        sameSite: 'lax' as const,
-        secure: true,
-      },
     }),
+    defaultCookieAttributes: {
+      sameSite: cookieDomain ? ('lax' as const) : ('none' as const),
+      secure: true,
+    },
   },
   databaseHooks: {
     session: {
