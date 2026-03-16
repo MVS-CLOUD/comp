@@ -45,7 +45,7 @@ const FRAMEWORKS: SeedFramework[] = [
   { id: 'frk_hc_internal_release', name: 'Internal Release Readiness', description: 'Deterministic release and evidence gate requirements', version: '2026-03-15', visible: true },
 ];
 
-const DATE_STRING = '2026-03-15 00:00:00.000';
+const DATE_STRING = '2026-03-15T00:00:00.000Z';
 
 const MANUAL_REQUIREMENTS = {
   hipaa: [
