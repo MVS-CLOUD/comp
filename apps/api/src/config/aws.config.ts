@@ -28,6 +28,7 @@ export const awsConfig = registerAs('aws', (): AwsConfig => {
         .map((e) => `${e.path.join('.')}: ${e.message}`)
         .join(', ')}`,
     );
+    return config as AwsConfig;
   }
 
   return result.data;
