@@ -1,0 +1,208 @@
+enum ReleaseSubjectType {
+  application
+  api
+  service
+  integration
+  environment
+}
+
+enum EvidenceClass {
+  deterministic
+  ai_assisted
+  browser_collected
+  manual_attested
+  external_validated
+}
+
+enum ReleaseRunStatus {
+  draft
+  running
+  awaiting_approvals
+  completed
+  failed
+  cancelled
+}
+
+enum ReleaseGateDecisionStatus {
+  pass
+  fail
+  conditional
+}
+
+enum ManualAttestationStatus {
+  pending
+  approved
+  rejected
+  expired
+}
+
+enum ExternalValidationType {
+  onc_acb
+  onc_atl
+  partner
+  legal
+  compliance
+  security
+}
+
+enum ExternalValidationStatus {
+  pending
+  active
+  expired
+  rejected
+}
+
+model ReleaseSubject {
+  id             String            @id @default(dbgenerated("generate_prefixed_cuid('rls_sb'::text)"))
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  type           ReleaseSubjectType
+  name           String
+  description    String?
+  repositoryUrl  String?
+  environment    String?
+  serviceBaseUrl String?
+  fhirBaseUrl    String?
+  partnerProfile String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  releaseDefinitions ReleaseDefinition[]
+  releaseRuns        ReleaseRun[]
+  evidenceArtifacts  EvidenceArtifact[]
+
+  @@index([organizationId, type])
+}
+
+model ReleaseDefinition {
+  id                  String         @id @default(dbgenerated("generate_prefixed_cuid('rls_df'::text)"))
+  organizationId      String
+  organization        Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  releaseSubjectId    String
+  releaseSubject      ReleaseSubject @relation(fields: [releaseSubjectId], references: [id], onDelete: Cascade)
+  name                String
+  description         String?
+  requiredFrameworkIds String[]      @default([])
+  requiredCheckIds    String[]       @default([])
+  requiredApprovalKeys String[]      @default([])
+  requiredExternalValidationKeys String[] @default([])
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  releaseRuns ReleaseRun[]
+
+  @@index([organizationId, releaseSubjectId])
+}
+
+model ReleaseRun {
+  id                String                   @id @default(dbgenerated("generate_prefixed_cuid('rls_rn'::text)"))
+  organizationId    String
+  organization      Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  releaseDefinitionId String
+  releaseDefinition ReleaseDefinition        @relation(fields: [releaseDefinitionId], references: [id], onDelete: Cascade)
+  releaseSubjectId  String
+  releaseSubject    ReleaseSubject           @relation(fields: [releaseSubjectId], references: [id], onDelete: Cascade)
+  version           String
+  commitSha         String?
+  buildId           String?
+  status            ReleaseRunStatus         @default(draft)
+  startedAt         DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  gateDecision      ReleaseGateDecision?
+  manualAttestations ManualAttestation[]
+  externalValidations ExternalValidation[]
+  evidenceArtifacts EvidenceArtifact[]
+  tasks             Task[]
+  findings          Finding[]
+  evidenceSubmissions EvidenceSubmission[]
+  integrationCheckRuns IntegrationCheckRun[]
+
+  @@index([organizationId, status])
+  @@index([releaseDefinitionId, createdAt])
+}
+
+model ReleaseGateDecision {
+  id              String                    @id @default(dbgenerated("generate_prefixed_cuid('rls_gd'::text)"))
+  releaseRunId    String                    @unique
+  releaseRun      ReleaseRun                @relation(fields: [releaseRunId], references: [id], onDelete: Cascade)
+  decision        ReleaseGateDecisionStatus
+  blockingReasons Json?
+  summary         String?
+  evidenceHash    String?
+  decidedAt       DateTime                  @default(now())
+}
+
+model ManualAttestation {
+  id             String                  @id @default(dbgenerated("generate_prefixed_cuid('rls_ma'::text)"))
+  organizationId String
+  organization   Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  releaseRunId   String
+  releaseRun     ReleaseRun              @relation(fields: [releaseRunId], references: [id], onDelete: Cascade)
+  requirementId  String?
+  requirement    FrameworkEditorRequirement? @relation(fields: [requirementId], references: [id], onDelete: SetNull)
+  approvalKey    String
+  approverId     String?
+  approver       Member?                 @relation(fields: [approverId], references: [id], onDelete: SetNull)
+  title          String
+  status         ManualAttestationStatus @default(pending)
+  notes          String?
+  expiresAt      DateTime?
+  approvedAt     DateTime?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  @@index([organizationId, status])
+  @@index([releaseRunId])
+  @@unique([releaseRunId, approvalKey])
+}
+
+model ExternalValidation {
+  id             String                   @id @default(dbgenerated("generate_prefixed_cuid('rls_ev'::text)"))
+  organizationId String
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  releaseRunId   String
+  releaseRun     ReleaseRun               @relation(fields: [releaseRunId], references: [id], onDelete: Cascade)
+  validationKey  String
+  type           ExternalValidationType
+  status         ExternalValidationStatus @default(pending)
+  title          String
+  authority      String?
+  referenceId    String?
+  artifactUrl    String?
+  validFrom      DateTime?
+  validTo        DateTime?
+  notes          String?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+
+  @@index([organizationId, type, status])
+  @@index([releaseRunId])
+  @@unique([releaseRunId, validationKey])
+}
+
+model EvidenceArtifact {
+  id              String        @id @default(dbgenerated("generate_prefixed_cuid('rls_ea'::text)"))
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  releaseSubjectId String?
+  releaseSubject  ReleaseSubject? @relation(fields: [releaseSubjectId], references: [id], onDelete: SetNull)
+  releaseRunId    String?
+  releaseRun      ReleaseRun?   @relation(fields: [releaseRunId], references: [id], onDelete: SetNull)
+  title           String
+  artifactType    String
+  evidenceClass   EvidenceClass
+  storageUrl      String?
+  sha256          String?
+  gateEligible    Boolean       @default(false)
+  collectedAt     DateTime      @default(now())
+  expiresAt       DateTime?
+  metadata        Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([organizationId, evidenceClass])
+  @@index([releaseRunId])
+}

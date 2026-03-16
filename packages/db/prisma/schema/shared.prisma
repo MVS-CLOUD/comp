@@ -107,8 +107,11 @@ enum Departments {
 }
 
 enum Frequency {
+  ongoing
+  one_time
   monthly
   quarterly
+  semiannual
   yearly
 }
 

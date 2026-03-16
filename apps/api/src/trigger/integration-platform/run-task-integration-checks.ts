@@ -209,55 +209,61 @@ export const runTaskIntegrationChecks = task({
 
     // Ensure we have valid credentials (refresh OAuth tokens if needed)
     const apiUrl = process.env.BASE_URL || 'http://localhost:3333';
-    let credentials: Record<string, string>;
+    let credentials: Record<string, string> = {};
+    const requiresCustomCredentials =
+      manifest.auth.type === 'custom' &&
+      (manifest.auth.config.credentialFields?.some((field) => field.required !== false) ??
+        false);
 
-    try {
-      logger.info('Ensuring valid credentials (refreshing if needed)...');
-      const response = await fetch(
-        `${apiUrl}/v1/integrations/connections/${connectionId}/ensure-valid-credentials`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
-            'x-organization-id': organizationId,
-          },
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage =
-          (errorData as { message?: string }).message ||
-          `Failed to get valid credentials: ${response.status}`;
-        logger.error(errorMessage);
-
-        // If unauthorized, mark connection as error
-        if (response.status === 401) {
-          await db.integrationConnection.update({
-            where: { id: connectionId },
-            data: {
-              status: 'error',
-              errorMessage:
-                'OAuth token expired. Please reconnect the integration.',
+    if (!(manifest.auth.type === 'custom' && !requiresCustomCredentials)) {
+      try {
+        logger.info('Ensuring valid credentials (refreshing if needed)...');
+        const response = await fetch(
+          `${apiUrl}/v1/integrations/connections/${connectionId}/ensure-valid-credentials`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-service-token': process.env.SERVICE_TOKEN_TRIGGER!,
+              'x-organization-id': organizationId,
             },
-          });
+          },
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          const errorMessage =
+            (errorData as { message?: string }).message ||
+            `Failed to get valid credentials: ${response.status}`;
+          logger.error(errorMessage);
+
+          // If unauthorized, mark connection as error
+          if (response.status === 401) {
+            await db.integrationConnection.update({
+              where: { id: connectionId },
+              data: {
+                status: 'error',
+                errorMessage:
+                  'OAuth token expired. Please reconnect the integration.',
+              },
+            });
+          }
+
+          return { success: false, error: errorMessage };
         }
 
-        return { success: false, error: errorMessage };
+        const result = (await response.json()) as {
+          success: boolean;
+          credentials: Record<string, string>;
+        };
+        credentials = result.credentials;
+        logger.info('Credentials validated successfully');
+      } catch (error) {
+        logger.error('Failed to ensure valid credentials', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return { success: false, error: 'Failed to validate credentials' };
       }
-
-      const result = (await response.json()) as {
-        success: boolean;
-        credentials: Record<string, string>;
-      };
-      credentials = result.credentials;
-      logger.info('Credentials validated successfully');
-    } catch (error) {
-      logger.error('Failed to ensure valid credentials', {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return { success: false, error: 'Failed to validate credentials' };
     }
 
     // Validate credentials based on auth type
@@ -271,10 +277,7 @@ export const runTaskIntegrationChecks = task({
       };
     }
 
-    if (
-      manifest.auth.type === 'custom' &&
-      Object.keys(credentials).length === 0
-    ) {
+    if (requiresCustomCredentials && Object.keys(credentials).length === 0) {
       logger.error(
         `No credentials found for custom integration: ${connectionId}`,
       );
@@ -435,11 +438,18 @@ export const runTaskIntegrationChecks = task({
           if (currentTask.frequency) {
             reviewDate = new Date();
             switch (currentTask.frequency) {
+              case 'ongoing':
+              case 'one_time':
+                reviewDate = undefined;
+                break;
               case 'monthly':
                 reviewDate.setMonth(reviewDate.getMonth() + 1);
                 break;
               case 'quarterly':
                 reviewDate.setMonth(reviewDate.getMonth() + 3);
+                break;
+              case 'semiannual':
+                reviewDate.setMonth(reviewDate.getMonth() + 6);
                 break;
               case 'yearly':
                 reviewDate.setFullYear(reviewDate.getFullYear() + 1);
@@ -451,7 +461,7 @@ export const runTaskIntegrationChecks = task({
             where: { id: taskId },
             data: {
               status: 'done',
-              ...(reviewDate ? { reviewDate } : {}),
+              reviewDate: reviewDate ?? null,
             },
           });
           logger.info(

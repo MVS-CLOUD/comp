@@ -29,12 +29,14 @@ describe('DevicesController', () => {
   const mockGuard = { canActivate: jest.fn().mockReturnValue(true) };
 
   const mockAuthContext: AuthContextType = {
-    authType: 'session' as const,
+    authType: 'session',
     userId: 'usr_1',
     userEmail: 'user@example.com',
     organizationId: 'org_1',
     memberId: 'mem_1',
-    permissions: [],
+    isApiKey: false,
+    isPlatformAdmin: false,
+    userRoles: ['admin'],
   };
 
   beforeEach(async () => {
@@ -90,10 +92,12 @@ describe('DevicesController', () => {
       mockService.findAllByOrganization.mockResolvedValue([]);
 
       const authContextNoUser: AuthContextType = {
-        authType: 'api-key' as const,
+        authType: 'api-key',
         organizationId: 'org_1',
-        permissions: [],
-      } as AuthContextType;
+        isApiKey: true,
+        isPlatformAdmin: false,
+        userRoles: null,
+      };
 
       const result = await controller.getAllDevices('org_1', authContextNoUser);
 
@@ -152,10 +156,12 @@ describe('DevicesController', () => {
       mockService.getMemberById.mockResolvedValue({ id: 'mem_1' });
 
       const authContextNoUser: AuthContextType = {
-        authType: 'api-key' as const,
+        authType: 'api-key',
         organizationId: 'org_1',
-        permissions: [],
-      } as AuthContextType;
+        isApiKey: true,
+        isPlatformAdmin: false,
+        userRoles: null,
+      };
 
       const result = await controller.getDevicesByMember(
         'mem_1',

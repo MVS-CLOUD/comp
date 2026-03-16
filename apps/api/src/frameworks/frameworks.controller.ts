@@ -50,6 +50,14 @@ export class FrameworksController {
     return { data, count: data.length };
   }
 
+  @Get('healthcare/library')
+  @RequirePermission('framework', 'read')
+  @ApiOperation({ summary: 'List the native healthcare framework library' })
+  async findHealthcareLibrary() {
+    const data = await this.frameworksService.findHealthcareLibrary();
+    return { data, count: data.length };
+  }
+
   @Get('scores')
   @RequirePermission('framework', 'read')
   @ApiOperation({ summary: 'Get overview compliance scores' })
@@ -96,6 +104,17 @@ export class FrameworksController {
       organizationId,
       dto.frameworkIds,
     );
+  }
+
+  @Post('healthcare/install')
+  @RequirePermission('framework', 'create')
+  @ApiOperation({
+    summary: 'Install the native healthcare framework set into the organization',
+  })
+  async installHealthcareFrameworks(
+    @OrganizationId() organizationId: string,
+  ) {
+    return this.frameworksService.installHealthcareFrameworks(organizationId);
   }
 
   @Delete(':id')

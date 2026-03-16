@@ -39,6 +39,7 @@ model FrameworkEditorRequirement {
 
   controlTemplates FrameworkEditorControlTemplate[]
   requirementMaps  RequirementMap[]
+  manualAttestations ManualAttestation[]
 
   // Dates
   createdAt DateTime @default(now())

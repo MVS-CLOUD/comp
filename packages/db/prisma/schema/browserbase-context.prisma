@@ -72,6 +72,8 @@ model BrowserAutomationRun {
 
     /// AI explanation of why it passed or failed
     evaluationReason String?
+    evidenceClass EvidenceClass? @default(browser_collected)
+    gateEligible Boolean @default(false)
 
     /// Error message (if failed)
     error String?

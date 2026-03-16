@@ -119,6 +119,12 @@ export type {
 
 // Individual manifests (for direct import if needed)
 export { manifest as githubManifest } from './manifests/github';
+export { healthosCiManifest } from './manifests/healthos-ci';
+export { healthosCloudManifest } from './manifests/healthos-cloud';
+export { healthosRuntimeManifest } from './manifests/healthos-runtime';
+export { healthosDocumentationManifest } from './manifests/healthos-documentation';
+export { healthosPartnerManifest } from './manifests/healthos-partner';
+export { healthosRepoManifest } from './manifests/healthos-repo';
 
 // Ramp types (used by sync controller)
 export type {

@@ -37,6 +37,8 @@ model Task {
   approver       Member?     @relation("TaskApprover", fields: [approverId], references: [id])
   approvedAt     DateTime?
   previousStatus TaskStatus?
+  releaseRunId   String?
+  releaseRun     ReleaseRun? @relation(fields: [releaseRunId], references: [id], onDelete: SetNull)
 }
 
 enum TaskStatus {
@@ -49,10 +51,13 @@ enum TaskStatus {
 }
 
 enum TaskFrequency {
+  ongoing
+  one_time
   daily
   weekly
   monthly
   quarterly
+  semiannual
   yearly
 }
 

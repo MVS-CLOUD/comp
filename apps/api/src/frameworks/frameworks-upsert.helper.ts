@@ -217,6 +217,8 @@ export async function upsertOrgFrameworkStructure({
         title: tt.name,
         description: tt.description,
         automationStatus: tt.automationStatus,
+        frequency: tt.frequency,
+        department: tt.department,
         organizationId,
         taskTemplateId: tt.id,
       })),
@@ -245,6 +247,29 @@ export async function upsertOrgFrameworkStructure({
     },
     select: { id: true, taskTemplateId: true },
   });
+  const taskTemplateMap = new Map(taskTemplates.map((template) => [template.id, template]));
+
+  for (const task of allTasks) {
+    if (!task.taskTemplateId) {
+      continue;
+    }
+
+    const template = taskTemplateMap.get(task.taskTemplateId);
+    if (!template) {
+      continue;
+    }
+
+    await tx.task.update({
+      where: { id: task.id },
+      data: {
+        title: template.name,
+        description: template.description,
+        automationStatus: template.automationStatus,
+        frequency: template.frequency,
+        department: template.department,
+      },
+    });
+  }
 
   const controlMap = new Map(
     allControls

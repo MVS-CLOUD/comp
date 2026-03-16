@@ -260,11 +260,18 @@ export const runBrowserAutomation = task({
           if (currentTask.frequency) {
             reviewDate = new Date();
             switch (currentTask.frequency) {
+              case 'ongoing':
+              case 'one_time':
+                reviewDate = undefined;
+                break;
               case 'monthly':
                 reviewDate.setMonth(reviewDate.getMonth() + 1);
                 break;
               case 'quarterly':
                 reviewDate.setMonth(reviewDate.getMonth() + 3);
+                break;
+              case 'semiannual':
+                reviewDate.setMonth(reviewDate.getMonth() + 6);
                 break;
               case 'yearly':
                 reviewDate.setFullYear(reviewDate.getFullYear() + 1);
@@ -276,7 +283,7 @@ export const runBrowserAutomation = task({
             where: { id: taskId },
             data: {
               status: 'done',
-              ...(reviewDate ? { reviewDate } : {}),
+              reviewDate: reviewDate ?? null,
             },
           });
 

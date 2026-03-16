@@ -19,6 +19,12 @@ const validStatuses = new Set([
 describeIfEnabled('Maced provider contract canary (e2e)', () => {
   let client: MacedClient;
 
+  const expectValidUrl = (value: string | null | undefined) => {
+    if (typeof value === 'string') {
+      expect(() => new URL(value)).not.toThrow();
+    }
+  };
+
   beforeAll(() => {
     if (!process.env.MACED_API_KEY) {
       throw new Error(
@@ -38,17 +44,9 @@ describeIfEnabled('Maced provider contract canary (e2e)', () => {
     expect(Number.isNaN(Date.parse(run.createdAt))).toBe(false);
     expect(Number.isNaN(Date.parse(run.updatedAt))).toBe(false);
 
-    if (run.repoUrl) {
-      expect(() => new URL(run.repoUrl)).not.toThrow();
-    }
-
-    if (run.temporalUiUrl) {
-      expect(() => new URL(run.temporalUiUrl)).not.toThrow();
-    }
-
-    if (run.webhookUrl) {
-      expect(() => new URL(run.webhookUrl)).not.toThrow();
-    }
+    expectValidUrl(run.repoUrl);
+    expectValidUrl(run.temporalUiUrl);
+    expectValidUrl(run.webhookUrl);
   };
 
   it('lists runs and validates canonical response shape', async () => {

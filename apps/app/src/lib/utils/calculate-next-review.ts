@@ -18,11 +18,17 @@ export function calculateNextReview(
   const nextReviewDate = new Date(baseDate);
 
   switch (frequency) {
+    case 'ongoing':
+    case 'one_time':
+      return null;
     case 'monthly':
       nextReviewDate.setMonth(nextReviewDate.getMonth() + 1);
       break;
     case 'quarterly':
       nextReviewDate.setMonth(nextReviewDate.getMonth() + 3);
+      break;
+    case 'semiannual':
+      nextReviewDate.setMonth(nextReviewDate.getMonth() + 6);
       break;
     case 'yearly':
       nextReviewDate.setFullYear(nextReviewDate.getFullYear() + 1);

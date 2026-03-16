@@ -1,0 +1,6 @@
+{
+  "installCommand": "bun install",
+  "buildCommand": "cd ../.. && bun run db:generate && cd apps/app && SKIP_ENV_VALIDATION=true bun run build",
+  "framework": "nextjs",
+  "outputDirectory": ".next"
+}

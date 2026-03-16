@@ -10,6 +10,7 @@ import {
   computeFrameworkComplianceScore,
 } from './frameworks-scores.helper';
 import { upsertOrgFrameworkStructure } from './frameworks-upsert.helper';
+import { HEALTHCARE_FRAMEWORK_IDS } from './healthcare-framework.constants';
 
 @Injectable()
 export class FrameworksService {
@@ -153,6 +154,17 @@ export class FrameworksService {
     return frameworks;
   }
 
+  async findHealthcareLibrary() {
+    return db.frameworkEditorFramework.findMany({
+      where: {
+        id: { in: [...HEALTHCARE_FRAMEWORK_IDS] },
+        visible: true,
+      },
+      include: { requirements: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+
   async getScores(organizationId: string, userId?: string) {
     const [scores, currentMember] = await Promise.all([
       getOverviewScores(organizationId),
@@ -259,5 +271,34 @@ export class FrameworksService {
     });
 
     return { success: true };
+  }
+
+  async installHealthcareFrameworks(organizationId: string) {
+    return db.$transaction(async (tx) => {
+      const frameworks = await tx.frameworkEditorFramework.findMany({
+        where: {
+          id: { in: [...HEALTHCARE_FRAMEWORK_IDS] },
+          visible: true,
+        },
+        include: { requirements: true },
+      });
+
+      if (frameworks.length !== HEALTHCARE_FRAMEWORK_IDS.length) {
+        throw new BadRequestException(
+          'The native healthcare framework library is incomplete or not fully visible.',
+        );
+      }
+
+      const finalIds = frameworks.map((framework) => framework.id);
+
+      await upsertOrgFrameworkStructure({
+        organizationId,
+        targetFrameworkEditorIds: finalIds,
+        frameworkEditorFrameworks: frameworks,
+        tx,
+      });
+
+      return { success: true, frameworksAdded: finalIds.length };
+    });
   }
 }

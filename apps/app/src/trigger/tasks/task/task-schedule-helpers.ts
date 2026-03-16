@@ -98,8 +98,16 @@ export const getTargetStatus = (task: TaskAutomationData): TargetStatus => {
  */
 export const calculateNextDueDate = (
   reviewDate: Date,
-  frequency: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly',
-): Date => {
+  frequency:
+    | 'ongoing'
+    | 'one_time'
+    | 'daily'
+    | 'weekly'
+    | 'monthly'
+    | 'quarterly'
+    | 'semiannual'
+    | 'yearly',
+): Date | null => {
   const addDaysToDate = (date: Date, days: number): Date => {
     const result = new Date(date.getTime());
     result.setDate(result.getDate() + days);
@@ -117,6 +125,9 @@ export const calculateNextDueDate = (
   };
 
   switch (frequency) {
+    case 'ongoing':
+    case 'one_time':
+      return null;
     case 'daily':
       return addDaysToDate(reviewDate, 1);
     case 'weekly':
@@ -125,6 +136,8 @@ export const calculateNextDueDate = (
       return addMonthsToDate(reviewDate, 1);
     case 'quarterly':
       return addMonthsToDate(reviewDate, 3);
+    case 'semiannual':
+      return addMonthsToDate(reviewDate, 6);
     case 'yearly':
       return addMonthsToDate(reviewDate, 12);
   }

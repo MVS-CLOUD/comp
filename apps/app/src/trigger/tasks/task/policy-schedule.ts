@@ -70,11 +70,18 @@ export const policySchedule = schedules.task({
 
       let monthsToAdd = 0;
       switch (policy.frequency) {
+        case 'ongoing':
+        case 'one_time':
+          monthsToAdd = 0;
+          break;
         case 'monthly':
           monthsToAdd = 1;
           break;
         case 'quarterly':
           monthsToAdd = 3;
+          break;
+        case 'semiannual':
+          monthsToAdd = 6;
           break;
         case 'yearly':
           monthsToAdd = 12;

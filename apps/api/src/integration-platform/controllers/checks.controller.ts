@@ -190,10 +190,12 @@ export class ChecksController {
       }
     }
 
-    if (
+    const requiresCustomCredentials =
       manifest.auth.type === 'custom' &&
-      Object.keys(credentials).length === 0
-    ) {
+      (manifest.auth.config.credentialFields?.some((field) => field.required !== false) ??
+        false);
+
+    if (requiresCustomCredentials && Object.keys(credentials).length === 0) {
       throw new HttpException(
         'No valid credentials found for custom integration',
         HttpStatus.BAD_REQUEST,

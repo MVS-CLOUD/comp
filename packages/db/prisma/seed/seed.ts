@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { frameworkEditorModelSchemas } from './frameworkEditorSchemas';
+import { seedHealthcareFrameworks } from './healthcare/seed-healthcare';
 
 const prisma = new PrismaClient({
   datasourceUrl: process.env.DATABASE_URL,
@@ -193,8 +194,11 @@ async function main() {
   try {
     await seedJsonFiles('primitives');
     await seedJsonFiles('relations');
+    await seedHealthcareFrameworks(prisma);
     await prisma.$disconnect();
-    console.log('Seeding completed successfully for primitives and relations.');
+    console.log(
+      'Seeding completed successfully for primitives, relations, and healthcare frameworks.',
+    );
   } catch (error: unknown) {
     console.error('Seeding failed:', error);
     await prisma.$disconnect();

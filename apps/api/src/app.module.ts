@@ -44,6 +44,7 @@ import { EmailModule } from './email/email.module';
 import { SecretsModule } from './secrets/secrets.module';
 import { SecurityPenetrationTestsModule } from './security-penetration-tests/security-penetration-tests.module';
 import { StripeModule } from './stripe/stripe.module';
+import { ReleaseReadinessModule } from './release-readiness/release-readiness.module';
 
 @Module({
   imports: [
@@ -100,6 +101,7 @@ import { StripeModule } from './stripe/stripe.module';
     SecretsModule,
     SecurityPenetrationTestsModule,
     StripeModule,
+    ReleaseReadinessModule,
   ],
   controllers: [AppController],
   providers: [

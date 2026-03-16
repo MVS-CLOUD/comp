@@ -443,11 +443,18 @@ export class TaskIntegrationsController {
         if (isTransitioningToDone && task.frequency) {
           reviewDate = new Date();
           switch (task.frequency) {
+              case 'ongoing':
+              case 'one_time':
+                reviewDate = undefined;
+                break;
             case 'monthly':
               reviewDate.setMonth(reviewDate.getMonth() + 1);
               break;
             case 'quarterly':
               reviewDate.setMonth(reviewDate.getMonth() + 3);
+              break;
+            case 'semiannual':
+              reviewDate.setMonth(reviewDate.getMonth() + 6);
               break;
             case 'yearly':
               reviewDate.setFullYear(reviewDate.getFullYear() + 1);
@@ -459,7 +466,7 @@ export class TaskIntegrationsController {
           where: { id: taskId },
           data: {
             status: newStatus,
-            ...(reviewDate ? { reviewDate } : {}),
+            reviewDate: reviewDate ?? null,
           },
         });
         this.logger.log(

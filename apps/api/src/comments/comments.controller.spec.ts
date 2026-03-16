@@ -41,12 +41,10 @@ describe('CommentsController', () => {
 
   const apiKeyAuthContext: AuthContext = {
     organizationId: 'org_123',
-    authType: 'apiKey',
+    authType: 'api-key',
     isApiKey: true,
     isPlatformAdmin: false,
-    userId: undefined,
-    userEmail: undefined,
-    userRoles: ['admin'],
+    userRoles: null,
   };
 
   beforeEach(async () => {

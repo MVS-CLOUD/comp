@@ -8,6 +8,9 @@
  * These are derived from the FrameworkEditorTaskTemplate seed data.
  */
 export const TASK_TEMPLATE_IDS = [
+  'frk_tt_hc_tsk_smart_001', // SMART/FHIR Runtime Checks
+  'frk_tt_hc_tsk_dosespot_001', // DoseSpot Scenario Verification
+  'frk_tt_hc_tsk_rel_001', // Release Approval Review
   'frk_tt_68407ae5274a64092c305104', // Secure Secrets
   'frk_tt_6849c1a1038c3f18cfff47bf', // Utility Monitoring
   'frk_tt_68406951bd282273ebe286cc', // Employee Verification
@@ -85,6 +88,12 @@ export type TaskTemplateId = (typeof TASK_TEMPLATE_IDS)[number];
  * Use this when you know the task name but need the ID.
  */
 export const TASK_TEMPLATES = {
+  /** SMART/FHIR Runtime Checks */
+  smartFhirRuntimeChecks: 'frk_tt_hc_tsk_smart_001',
+  /** DoseSpot Scenario Verification */
+  doseSpotScenarioVerification: 'frk_tt_hc_tsk_dosespot_001',
+  /** Release Approval Review */
+  releaseApprovalReview: 'frk_tt_hc_tsk_rel_001',
   /** Secure Secrets */
   secureSecrets: 'frk_tt_68407ae5274a64092c305104',
   /** Utility Monitoring */
@@ -222,6 +231,25 @@ export const TASK_TEMPLATE_INFO: Record<
   TaskTemplateId,
   { name: string; description: string; department: string; frequency: string }
 > = {
+  frk_tt_hc_tsk_smart_001: {
+    name: 'SMART/FHIR Runtime Checks',
+    description: 'Run SMART discovery, auth metadata, and FHIR capability validation.',
+    department: 'itsm',
+    frequency: 'yearly',
+  },
+  frk_tt_hc_tsk_dosespot_001: {
+    name: 'DoseSpot Scenario Verification',
+    description: 'Run partner scenario suite and collect readiness artifacts.',
+    department: 'gov',
+    frequency: 'yearly',
+  },
+  frk_tt_hc_tsk_rel_001: {
+    name: 'Release Approval Review',
+    description:
+      'Review deterministic blockers, manual attestations, and external validations before release.',
+    department: 'gov',
+    frequency: 'yearly',
+  },
   frk_tt_68407ae5274a64092c305104: {
     name: 'Secure Secrets',
     description: `Use your cloud providers default secret manager for storing secrets. Don't commit secrets to Git and...`,

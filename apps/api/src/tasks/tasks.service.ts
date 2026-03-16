@@ -9,9 +9,14 @@ import { db, TaskStatus, Prisma, TaskFrequency, Departments } from '@trycompai/d
 import { TaskResponseDto } from './dto/task-responses.dto';
 import { TaskNotifierService } from './task-notifier.service';
 
-function computeNextTaskReviewDate(frequency: TaskFrequency | null | undefined): Date {
+function computeNextTaskReviewDate(
+  frequency: TaskFrequency | null | undefined,
+): Date | null {
   const now = new Date();
   switch (frequency) {
+    case TaskFrequency.ongoing:
+    case TaskFrequency.one_time:
+      return null;
     case TaskFrequency.daily:
       return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
     case TaskFrequency.weekly:
@@ -20,10 +25,12 @@ function computeNextTaskReviewDate(frequency: TaskFrequency | null | undefined):
       return new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
     case TaskFrequency.quarterly:
       return new Date(now.getFullYear(), now.getMonth() + 3, now.getDate());
+    case TaskFrequency.semiannual:
+      return new Date(now.getFullYear(), now.getMonth() + 6, now.getDate());
     case TaskFrequency.yearly:
       return new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
     default:
-      return new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+      return null;
   }
 }
 
@@ -522,7 +529,8 @@ export class TasksService {
       if (updateData.frequency !== undefined) {
         dataToUpdate.frequency = updateData.frequency;
         // When frequency changes, recalculate the review date
-        dataToUpdate.reviewDate = computeNextTaskReviewDate(updateData.frequency);
+        const nextReviewDate = computeNextTaskReviewDate(updateData.frequency);
+        dataToUpdate.reviewDate = nextReviewDate;
       }
       if (updateData.department !== undefined) {
         dataToUpdate.department = updateData.department;

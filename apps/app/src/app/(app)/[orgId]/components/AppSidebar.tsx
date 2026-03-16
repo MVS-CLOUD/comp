@@ -98,6 +98,12 @@ export function AppSidebar({
       hidden: !canAccessRoute(permissions, 'integrations'),
     },
     {
+      id: 'release-readiness',
+      path: `/${organization.id}/release-readiness`,
+      name: 'Release Readiness',
+      hidden: !canAccessRoute(permissions, 'release-readiness'),
+    },
+    {
       id: 'tests',
       path: `/${organization.id}/cloud-tests`,
       name: 'Cloud Tests',

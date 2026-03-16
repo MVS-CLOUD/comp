@@ -3,9 +3,9 @@ import { z } from 'zod';
 
 const awsConfigSchema = z.object({
   region: z.string().default('us-east-1'),
-  accessKeyId: z.string().min(1, 'AWS_ACCESS_KEY_ID is required'),
-  secretAccessKey: z.string().min(1, 'AWS_SECRET_ACCESS_KEY is required'),
-  bucketName: z.string().min(1, 'AWS_BUCKET_NAME is required'),
+  accessKeyId: z.string().optional().default(''),
+  secretAccessKey: z.string().optional().default(''),
+  bucketName: z.string().optional().default(''),
   endpoint: z.string().optional(),
 });
 
@@ -20,12 +20,11 @@ export const awsConfig = registerAs('aws', (): AwsConfig => {
     endpoint: process.env.APP_AWS_ENDPOINT || '',
   };
 
-  // Validate configuration at startup
   const result = awsConfigSchema.safeParse(config);
 
   if (!result.success) {
-    throw new Error(
-      `AWS configuration validation failed: ${result.error.issues
+    console.warn(
+      `AWS configuration incomplete — S3 features will be disabled: ${result.error.issues
         .map((e) => `${e.path.join('.')}: ${e.message}`)
         .join(', ')}`,
     );

@@ -65,6 +65,14 @@ describe('TasksController', () => {
     memberId: 'mem_123',
   };
 
+  const apiKeyAuthContext: AuthContext = {
+    organizationId: 'org_123',
+    authType: 'api-key',
+    isApiKey: true,
+    isPlatformAdmin: false,
+    userRoles: null,
+  };
+
   const orgId = 'org_123';
 
   beforeEach(async () => {
@@ -243,18 +251,12 @@ describe('TasksController', () => {
     });
 
     it('should use getApiKeyActorUserId for API key auth', async () => {
-      const apiKeyAuth: AuthContext = {
-        ...authContext,
-        userId: undefined as unknown as string,
-        isApiKey: true,
-        authType: 'apiKey',
-      };
       mockTasksService.getApiKeyActorUserId.mockResolvedValue('usr_api');
       mockTasksService.updateTasksStatus.mockResolvedValue({
         updatedCount: 1,
       });
 
-      await controller.updateTasksStatus(orgId, apiKeyAuth, {
+      await controller.updateTasksStatus(orgId, apiKeyAuthContext, {
         taskIds: ['tsk_1'],
         status: TaskStatus.done,
       });
@@ -375,7 +377,7 @@ describe('TasksController', () => {
     it('should throw BadRequestException if userId is missing', async () => {
       const noUserAuth: AuthContext = {
         ...authContext,
-        userId: undefined as unknown as string,
+        userId: undefined,
       };
 
       await expect(
@@ -604,16 +606,10 @@ describe('TasksController', () => {
     });
 
     it('should use getApiKeyActorUserId for API key auth', async () => {
-      const apiKeyAuth: AuthContext = {
-        ...authContext,
-        userId: undefined as unknown as string,
-        isApiKey: true,
-        authType: 'apiKey',
-      };
       mockTasksService.getApiKeyActorUserId.mockResolvedValue('usr_api');
       mockTasksService.updateTask.mockResolvedValue({ id: 'tsk_1' });
 
-      await controller.updateTask(orgId, apiKeyAuth, 'tsk_1', {
+      await controller.updateTask(orgId, apiKeyAuthContext, 'tsk_1', {
         title: 'Updated',
       });
 
@@ -682,7 +678,7 @@ describe('TasksController', () => {
     it('should throw BadRequestException if userId is missing', async () => {
       const noUserAuth: AuthContext = {
         ...authContext,
-        userId: undefined as unknown as string,
+        userId: undefined,
       };
 
       await expect(
@@ -721,7 +717,7 @@ describe('TasksController', () => {
     it('should throw BadRequestException if userId is missing', async () => {
       const noUserAuth: AuthContext = {
         ...authContext,
-        userId: undefined as unknown as string,
+        userId: undefined,
       };
 
       await expect(
@@ -750,7 +746,7 @@ describe('TasksController', () => {
     it('should throw BadRequestException if userId is missing', async () => {
       const noUserAuth: AuthContext = {
         ...authContext,
-        userId: undefined as unknown as string,
+        userId: undefined,
       };
 
       await expect(
@@ -814,26 +810,16 @@ describe('TasksController', () => {
     });
 
     it('should throw BadRequestException for API key auth without userId', async () => {
-      const apiKeyAuth: AuthContext = {
-        ...authContext,
-        isApiKey: true,
-        authType: 'apiKey',
-      };
       mockTasksService.verifyTaskAccess.mockResolvedValue(undefined);
 
       await expect(
-        controller.uploadTaskAttachment(apiKeyAuth, 'tsk_1', {
+        controller.uploadTaskAttachment(apiKeyAuthContext, 'tsk_1', {
           fileName: 'file.pdf',
         } as never),
       ).rejects.toThrow(BadRequestException);
     });
 
     it('should use userId from DTO for API key auth', async () => {
-      const apiKeyAuth: AuthContext = {
-        ...authContext,
-        isApiKey: true,
-        authType: 'apiKey',
-      };
       const uploadDto = {
         fileName: 'file.pdf',
         userId: 'usr_dto',
@@ -842,7 +828,7 @@ describe('TasksController', () => {
       mockAttachmentsService.uploadAttachment.mockResolvedValue({ id: 'att_1' });
 
       await controller.uploadTaskAttachment(
-        apiKeyAuth,
+        apiKeyAuthContext,
         'tsk_1',
         uploadDto as never,
       );

@@ -12,7 +12,13 @@ import { awsManifest } from '../manifests/aws';
 import { azureManifest } from '../manifests/azure';
 import { gcpManifest } from '../manifests/gcp';
 import { manifest as githubManifest } from '../manifests/github';
+import { healthosCiManifest } from '../manifests/healthos-ci';
+import { healthosCloudManifest } from '../manifests/healthos-cloud';
 import { googleWorkspaceManifest } from '../manifests/google-workspace';
+import { healthosDocumentationManifest } from '../manifests/healthos-documentation';
+import { healthosPartnerManifest } from '../manifests/healthos-partner';
+import { healthosRepoManifest } from '../manifests/healthos-repo';
+import { healthosRuntimeManifest } from '../manifests/healthos-runtime';
 import { manifest as jumpcloudManifest } from '../manifests/jumpcloud';
 import { rampManifest } from '../manifests/ramp';
 import { ripplingManifest } from '../manifests/rippling';
@@ -149,6 +155,12 @@ const allManifests: IntegrationManifest[] = [
   rampManifest,
   vercelManifest,
   aikidoManifest,
+  healthosRuntimeManifest,
+  healthosDocumentationManifest,
+  healthosPartnerManifest,
+  healthosRepoManifest,
+  healthosCiManifest,
+  healthosCloudManifest,
 ];
 
 // Create and export the registry singleton

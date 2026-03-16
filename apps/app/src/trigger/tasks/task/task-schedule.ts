@@ -104,6 +104,10 @@ export const taskSchedule = schedules.task({
 
       let nextDueDate: Date | null = null;
       switch (task.frequency) {
+        case 'ongoing':
+        case 'one_time':
+          nextDueDate = null;
+          break;
         case 'daily':
           nextDueDate = addDaysToDate(task.reviewDate, 1);
           break;
@@ -115,6 +119,9 @@ export const taskSchedule = schedules.task({
           break;
         case 'quarterly':
           nextDueDate = addMonthsToDate(task.reviewDate, 3);
+          break;
+        case 'semiannual':
+          nextDueDate = addMonthsToDate(task.reviewDate, 6);
           break;
         case 'yearly':
           nextDueDate = addMonthsToDate(task.reviewDate, 12);

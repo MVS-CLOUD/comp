@@ -302,6 +302,8 @@ model IntegrationCheckRun {
     /// Task being verified (optional - checks can run without a task)
     taskId String?
     task   Task?   @relation(fields: [taskId], references: [id], onDelete: SetNull)
+    releaseRunId String?
+    releaseRun ReleaseRun? @relation(fields: [releaseRunId], references: [id], onDelete: SetNull)
 
     /// Check ID from the manifest
     checkId String
@@ -369,6 +371,10 @@ model IntegrationCheckResult {
 
     /// Evidence/proof (JSON - API response data)
     evidence Json?
+    gateEligible Boolean @default(true)
+    evidenceHash String?
+    standardReference String?
+    validatorName String?
 
     /// When this evidence was collected
     collectedAt DateTime @default(now())

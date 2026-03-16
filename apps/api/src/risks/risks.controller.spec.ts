@@ -1,10 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ForbiddenException } from '@nestjs/common';
+import {
+  Departments,
+  Impact,
+  Likelihood,
+  RiskCategory,
+  RiskStatus,
+  RiskTreatmentType,
+} from '@trycompai/db';
 import type { AuthContext } from '../auth/types';
 import { HybridAuthGuard } from '../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../auth/permission.guard';
 import { RisksController } from './risks.controller';
 import { RisksService } from './risks.service';
+import type { CreateRiskDto } from './dto/create-risk.dto';
+import type { GetRisksQueryDto } from './dto/get-risks-query.dto';
+import type { UpdateRiskDto } from './dto/update-risk.dto';
 
 // Mock auth.server to avoid importing better-auth ESM in Jest
 jest.mock('../auth/auth.server', () => ({
@@ -40,11 +51,26 @@ const mockHasRiskAccess = hasRiskAccess as jest.MockedFunction<
   typeof hasRiskAccess
 >;
 
+type MockRisk = Awaited<ReturnType<RisksService['findById']>>;
+type MockPaginatedRisksResult = Awaited<
+  ReturnType<RisksService['findAllByOrganization']>
+>;
+type MockAssigneeStats = Awaited<
+  ReturnType<RisksService['getStatsByAssignee']>
+>;
+type MockDepartmentStats = Awaited<
+  ReturnType<RisksService['getStatsByDepartment']>
+>;
+type MockCreatedRisk = Awaited<ReturnType<RisksService['create']>>;
+type MockUpdatedRisk = Awaited<ReturnType<RisksService['updateById']>>;
+type MockDeleteRiskResult = Awaited<ReturnType<RisksService['deleteById']>>;
+
 describe('RisksController', () => {
   let controller: RisksController;
   let risksService: jest.Mocked<RisksService>;
 
   const orgId = 'org_test123';
+  const now = new Date('2026-03-16T00:00:00.000Z');
 
   const authContext: AuthContext = {
     organizationId: orgId,
@@ -59,7 +85,7 @@ describe('RisksController', () => {
 
   const authContextNoUser: AuthContext = {
     organizationId: orgId,
-    authType: 'apikey',
+    authType: 'api-key',
     isApiKey: true,
     isPlatformAdmin: false,
     userRoles: ['admin'],
@@ -68,17 +94,28 @@ describe('RisksController', () => {
     memberId: undefined,
   };
 
-  const mockRisk = {
+  const baseRiskFixture: MockCreatedRisk = {
     id: 'risk_1',
     title: 'Test Risk',
     description: 'A test risk',
-    status: 'open',
-    category: 'operational',
-    department: 'engineering',
+    status: RiskStatus.open,
+    category: RiskCategory.operations,
+    department: Departments.it,
+    likelihood: Likelihood.possible,
+    impact: Impact.major,
+    residualLikelihood: Likelihood.unlikely,
+    residualImpact: Impact.minor,
+    treatmentStrategyDescription: 'Implement additional controls',
+    treatmentStrategy: RiskTreatmentType.mitigate,
     organizationId: orgId,
-    assigneeId: 'mem_123',
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    assigneeId: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const mockRisk: MockRisk = {
+    ...baseRiskFixture,
+    assignee: null,
   };
 
   beforeEach(async () => {
@@ -111,8 +148,13 @@ describe('RisksController', () => {
   });
 
   describe('getAllRisks', () => {
-    const paginatedResult = {
-      data: [mockRisk],
+    const paginatedResult: MockPaginatedRisksResult = {
+      data: [
+        {
+          ...baseRiskFixture,
+          assignee: null,
+        },
+      ],
       totalCount: 1,
       page: 1,
       pageCount: 1,
@@ -120,7 +162,7 @@ describe('RisksController', () => {
 
     it('should call findAllByOrganization with correct parameters', async () => {
       risksService.findAllByOrganization.mockResolvedValue(paginatedResult);
-      const query = { page: 1, perPage: 10 };
+      const query: GetRisksQueryDto = { page: 1, perPage: 10 };
 
       await controller.getAllRisks(query, orgId, authContext);
 
@@ -159,7 +201,7 @@ describe('RisksController', () => {
 
       const result = await controller.getAllRisks({}, orgId, authContextNoUser);
 
-      expect(result.authType).toBe('apikey');
+      expect(result.authType).toBe('api-key');
       expect(result).not.toHaveProperty('authenticatedUser');
     });
 
@@ -179,7 +221,7 @@ describe('RisksController', () => {
   });
 
   describe('getStatsByAssignee', () => {
-    const statsData = [
+    const statsData: MockAssigneeStats = [
       {
         id: 'mem_1',
         user: { name: 'User 1', image: null, email: 'u1@test.com' },
@@ -227,9 +269,9 @@ describe('RisksController', () => {
   });
 
   describe('getStatsByDepartment', () => {
-    const deptStats = [
-      { department: 'engineering', _count: 5 },
-      { department: 'finance', _count: 3 },
+    const deptStats: MockDepartmentStats = [
+      { department: Departments.it, _count: 5 },
+      { department: Departments.admin, _count: 3 },
     ];
 
     it('should call getStatsByDepartment with organizationId', async () => {
@@ -311,9 +353,10 @@ describe('RisksController', () => {
   });
 
   describe('createRisk', () => {
-    const createDto = {
+    const createDto: CreateRiskDto = {
       title: 'New Risk',
       description: 'Description',
+      category: RiskCategory.technology,
     };
 
     it('should call create with organizationId and dto', async () => {
@@ -349,13 +392,16 @@ describe('RisksController', () => {
       );
 
       expect(result).not.toHaveProperty('authenticatedUser');
-      expect(result.authType).toBe('apikey');
+      expect(result.authType).toBe('api-key');
     });
   });
 
   describe('updateRisk', () => {
-    const updateDto = { title: 'Updated Risk' };
-    const updatedRisk = { ...mockRisk, title: 'Updated Risk' };
+    const updateDto: UpdateRiskDto = { title: 'Updated Risk' };
+    const updatedRisk: MockUpdatedRisk = {
+      ...baseRiskFixture,
+      title: 'Updated Risk',
+    };
 
     it('should call updateById with correct parameters', async () => {
       risksService.updateById.mockResolvedValue(updatedRisk);
@@ -391,7 +437,7 @@ describe('RisksController', () => {
   });
 
   describe('deleteRisk', () => {
-    const deleteResult = {
+    const deleteResult: MockDeleteRiskResult = {
       message: 'Risk deleted successfully',
       deletedRisk: { id: 'risk_1', title: 'Test Risk' },
     };

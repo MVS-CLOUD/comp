@@ -79,6 +79,12 @@ model Organization {
   // RBAC
   organizationRoles          OrganizationRole[]
   roleNotificationSettings   RoleNotificationSetting[]
+  releaseSubjects            ReleaseSubject[]
+  releaseDefinitions         ReleaseDefinition[]
+  releaseRuns                ReleaseRun[]
+  manualAttestations         ManualAttestation[]
+  externalValidations        ExternalValidation[]
+  evidenceArtifacts          EvidenceArtifact[]
 
   @@index([slug])
 }

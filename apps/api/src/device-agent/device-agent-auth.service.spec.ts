@@ -41,8 +41,8 @@ import { auth } from '../auth/auth.server';
 import { deviceAgentRedisClient } from './device-agent-kv';
 
 const mockDb = db as jest.Mocked<typeof db>;
-const mockAuth = auth as jest.Mocked<typeof auth>;
 const mockKv = deviceAgentRedisClient as jest.Mocked<typeof deviceAgentRedisClient>;
+const mockedGetSession = jest.mocked(auth.api.getSession);
 
 describe('DeviceAgentAuthService', () => {
   let service: DeviceAgentAuthService;
@@ -54,9 +54,26 @@ describe('DeviceAgentAuthService', () => {
 
   describe('generateAuthCode', () => {
     it('should generate an auth code and store it in KV', async () => {
-      (mockAuth.api.getSession as jest.Mock).mockResolvedValue({
-        user: { id: 'user-1' },
-        session: { token: 'raw-session-token' },
+      mockedGetSession.mockResolvedValue({
+        user: {
+          id: 'user-1',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          email: 'user@example.com',
+          emailVerified: true,
+          name: 'Test User',
+          image: null,
+        },
+        session: {
+          id: 'session-1',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          userId: 'user-1',
+          expiresAt: new Date(Date.now() + 60_000),
+          token: 'raw-session-token',
+          ipAddress: null,
+          userAgent: null,
+        },
       });
 
       const headers = new Headers();
@@ -77,7 +94,7 @@ describe('DeviceAgentAuthService', () => {
     });
 
     it('should throw UnauthorizedException if no session', async () => {
-      (mockAuth.api.getSession as jest.Mock).mockResolvedValue(null);
+      mockedGetSession.mockResolvedValue(null);
 
       const headers = new Headers();
       await expect(

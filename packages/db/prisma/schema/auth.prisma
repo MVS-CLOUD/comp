@@ -125,6 +125,7 @@ model Member {
   publishedPolicyVersions PolicyVersion[]     @relation("PolicyVersionPublisher")
   approvedTasks           Task[]               @relation("TaskApprover")
   devices                 Device[]
+  manualAttestations      ManualAttestation[]
 }
 
 model Invitation {

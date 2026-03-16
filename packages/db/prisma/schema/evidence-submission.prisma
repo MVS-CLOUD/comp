@@ -2,6 +2,10 @@ model EvidenceSubmission {
   id             String           @id @default(dbgenerated("generate_prefixed_cuid('evs'::text)"))
   organizationId String
   formType       EvidenceFormType
+  artifactType   String?
+  evidenceClass  EvidenceClass?   @default(manual_attested)
+  gateEligible   Boolean          @default(false)
+  expiresAt      DateTime?
   submittedById  String?
   submittedAt    DateTime         @default(now())
   data           Json
@@ -9,12 +13,14 @@ model EvidenceSubmission {
   reviewedById   String?
   reviewedAt     DateTime?
   reviewReason   String?
+  releaseRunId   String?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   submittedBy  User?        @relation("EvidenceSubmitter", fields: [submittedById], references: [id], onDelete: SetNull)
   reviewedBy   User?        @relation("EvidenceReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  releaseRun   ReleaseRun?  @relation(fields: [releaseRunId], references: [id], onDelete: SetNull)
   findings     Finding[]
 
   @@index([organizationId, formType, submittedAt])

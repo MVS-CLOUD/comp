@@ -3,6 +3,11 @@ import { db } from '@trycompai/db';
 import { createHash } from 'node:crypto';
 import type { CredentialVaultService } from '../integration-platform/services/credential-vault.service';
 import type { CreatePenetrationTestDto } from './dto/create-penetration-test.dto';
+import type {
+  MacedCreatePentestRun,
+  MacedPentestRun,
+  MacedPentestRunWithProgress,
+} from './maced-client';
 import { SecurityPenetrationTestsService } from './security-penetration-tests.service';
 
 const mockCredentialVaultService: jest.Mocked<Pick<CredentialVaultService, 'getDecryptedCredentials'>> = {
@@ -61,6 +66,51 @@ describe('SecurityPenetrationTestsService', () => {
   const mockedDb = db as unknown as MockDb;
   let service: SecurityPenetrationTestsService;
 
+  const createRun = ({
+    id,
+    status,
+    ...overrides
+  }: Pick<MacedPentestRun, 'id' | 'status'> & Partial<MacedPentestRun>): MacedPentestRun => ({
+    id,
+    targetUrl: 'https://app.example.com',
+    repoUrl: 'https://github.com/org/repo',
+    status,
+    createdAt: '2026-03-01T00:00:00.000Z',
+    updatedAt: '2026-03-01T00:05:00.000Z',
+    error: null,
+    temporalUiUrl: null,
+    webhookUrl: null,
+    notificationEmail: null,
+    ...overrides,
+  });
+
+  const createCreateRun = ({
+    id,
+    status,
+    ...overrides
+  }: Pick<MacedCreatePentestRun, 'id' | 'status'> &
+    Partial<MacedCreatePentestRun>): MacedCreatePentestRun => ({
+    ...createRun({ id, status, ...overrides }),
+    webhookToken: 'provider-issued-token',
+    ...overrides,
+  });
+
+  const createRunDetail = ({
+    id,
+    status,
+    progress,
+    ...overrides
+  }: Pick<MacedPentestRunWithProgress, 'id' | 'status'> &
+    Partial<MacedPentestRunWithProgress>): MacedPentestRunWithProgress => ({
+    ...createRun({ id, status, ...overrides }),
+    progress: progress ?? {
+      status,
+      completedAgents: status === 'completed' ? 1 : 0,
+      totalAgents: 1,
+      elapsedMs: 1_000,
+    },
+  });
+
   beforeAll(() => {
     process.env.MACED_API_KEY = 'test-maced-api-key';
   });
@@ -75,6 +125,11 @@ describe('SecurityPenetrationTestsService', () => {
 
   beforeEach(() => {
     process.env.MACED_API_KEY = 'test-maced-api-key';
+    if (originalWebhookBase === undefined) {
+      delete process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL;
+    } else {
+      process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL = originalWebhookBase;
+    }
     service = new SecurityPenetrationTestsService(
       mockCredentialVaultService as unknown as CredentialVaultService,
     );
@@ -104,12 +159,7 @@ describe('SecurityPenetrationTestsService', () => {
   });
 
   it('lists reports with organization context', async () => {
-    const expectedPayload = [
-      {
-        id: 'run_123',
-        status: 'completed',
-      },
-    ];
+    const expectedPayload = [createRun({ id: 'run_123', status: 'completed' })];
 
     fetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify(expectedPayload), { status: 200 }),
@@ -126,16 +176,21 @@ describe('SecurityPenetrationTestsService', () => {
         }),
       }),
     );
-    expect(result).toEqual(expectedPayload);
+    expect(result).toEqual([
+      {
+        ...expectedPayload[0],
+        failedReason: null,
+      },
+    ]);
   });
 
   it('creates report payload with resolved webhook URL', async () => {
     process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL = 'https://api.trycomp.ai/webhook';
-    const expectedPayload = {
+    const expectedPayload = createCreateRun({
       id: 'run_456',
       status: 'provisioning',
       webhookToken: 'provider-issued-token',
-    };
+    });
 
     fetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify(expectedPayload), { status: 200 }),
@@ -168,11 +223,13 @@ describe('SecurityPenetrationTestsService', () => {
 
     fetchMock.mockResolvedValueOnce(
       new Response(
-        JSON.stringify({
+        JSON.stringify(
+          createCreateRun({
           id: 'run_default_webhook',
           status: 'provisioning',
           webhookToken: 'provider-issued-token',
-        }),
+          }),
+        ),
         { status: 200 },
       ),
     );
@@ -196,10 +253,13 @@ describe('SecurityPenetrationTestsService', () => {
 
     fetchMock.mockResolvedValueOnce(
       new Response(
-        JSON.stringify({
-          id: 'run_missing_token',
-          status: 'provisioning',
-        }),
+        JSON.stringify(
+          createCreateRun({
+            id: 'run_missing_token',
+            status: 'provisioning',
+            webhookToken: null,
+          }),
+        ),
         { status: 200 },
       ),
     );
@@ -230,11 +290,13 @@ describe('SecurityPenetrationTestsService', () => {
 
     fetchMock.mockResolvedValueOnce(
       new Response(
-        JSON.stringify({
+        JSON.stringify(
+          createCreateRun({
           id: 'run_handshake_retry',
           status: 'provisioning',
           webhookToken: 'provider-issued-token',
-        }),
+          }),
+        ),
         { status: 200 },
       ),
     );
@@ -261,10 +323,12 @@ describe('SecurityPenetrationTestsService', () => {
   it('persists ownership using create response id', async () => {
     fetchMock.mockResolvedValueOnce(
       new Response(
-        JSON.stringify({
+        JSON.stringify(
+          createCreateRun({
           id: 'run_from_id_field',
           status: 'provisioning',
-        }),
+          }),
+        ),
         { status: 200 },
       ),
     );
@@ -291,10 +355,12 @@ describe('SecurityPenetrationTestsService', () => {
 
     fetchMock.mockResolvedValueOnce(
       new Response(
-        JSON.stringify({
+        JSON.stringify(
+          createCreateRun({
           id: 'run_ownership_retry',
           status: 'provisioning',
-        }),
+          }),
+        ),
         { status: 200 },
       ),
     );
@@ -304,15 +370,13 @@ describe('SecurityPenetrationTestsService', () => {
         targetUrl: 'https://app.example.com',
         repoUrl: 'https://github.com/org/repo',
       }),
-    ).rejects.toEqual(
-      expect.objectContaining({
-        status: HttpStatus.BAD_GATEWAY,
-        response: {
-          error:
-            'Penetration test was created at provider but ownership mapping could not be persisted',
-        },
-      }),
-    );
+    ).rejects.toMatchObject({
+      status: HttpStatus.BAD_GATEWAY,
+      response: {
+        error:
+          'Penetration test was created at provider but ownership mapping could not be persisted',
+      },
+    });
 
     expect(mockedDb.securityPenetrationTestRun.upsert).toHaveBeenCalledTimes(3);
   });
@@ -324,13 +388,11 @@ describe('SecurityPenetrationTestsService', () => {
         repoUrl: 'https://github.com/org/repo',
         webhookUrl: '/v1/security-penetration-tests/webhook-route',
       }),
-    ).rejects.toEqual(
-      expect.objectContaining({
-        response: {
-          message: 'webhookUrl must be a valid absolute URL',
-        },
-      }),
-    );
+    ).rejects.toMatchObject({
+      response: {
+        message: 'webhookUrl must be a valid absolute URL',
+      },
+    });
   });
 
   it('handles non-json create response as mapped 502', async () => {
@@ -377,11 +439,11 @@ describe('SecurityPenetrationTestsService', () => {
   });
 
   it('normalizes unversioned webhook route to canonical v1 webhook route', async () => {
-    const expectedPayload = {
+    const expectedPayload = createCreateRun({
       id: 'run_789',
       status: 'provisioning',
       webhookToken: 'provider-token',
-    };
+    });
     const webhookUrl = 'https://app.company.test/security-penetration-tests/webhook';
 
     process.env.SECURITY_PENETRATION_TESTS_WEBHOOK_URL = webhookUrl;
@@ -407,10 +469,12 @@ describe('SecurityPenetrationTestsService', () => {
   it('allows third-party webhook URLs without requiring provider webhook token', async () => {
     fetchMock.mockResolvedValueOnce(
       new Response(
-        JSON.stringify({
+        JSON.stringify(
+          createCreateRun({
           id: 'run_external_callback',
           status: 'provisioning',
-        }),
+          }),
+        ),
         { status: 200 },
       ),
     );
@@ -440,11 +504,13 @@ describe('SecurityPenetrationTestsService', () => {
   it('normalizes legacy /api/security/penetration-tests/webhook route to canonical v1 route', async () => {
     fetchMock.mockResolvedValueOnce(
       new Response(
-        JSON.stringify({
+        JSON.stringify(
+          createCreateRun({
           id: 'run_api_legacy',
           status: 'provisioning',
           webhookToken: 'provider-token',
-        }),
+          }),
+        ),
         { status: 200 },
       ),
     );
@@ -465,10 +531,10 @@ describe('SecurityPenetrationTestsService', () => {
   });
 
   it('keeps provided webhook route plus query params', async () => {
-    const expectedPayload = {
+    const expectedPayload = createCreateRun({
       id: 'run_qp',
       status: 'provisioning',
-    };
+    });
 
     const webhookUrl = 'https://app.company.test/v1/security-penetration-tests/webhook?foo=bar';
 
@@ -489,10 +555,10 @@ describe('SecurityPenetrationTestsService', () => {
   });
 
   it('supports absolute webhook URLs that require appending the expected endpoint', async () => {
-    const expectedPayload = {
+    const expectedPayload = createCreateRun({
       id: 'run_101',
       status: 'provisioning',
-    };
+    });
 
     fetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify(expectedPayload), { status: 200 }),
@@ -513,11 +579,13 @@ describe('SecurityPenetrationTestsService', () => {
   it('strips webhookToken query parameter before forwarding webhook URL to provider', async () => {
     fetchMock.mockResolvedValueOnce(
       new Response(
-        JSON.stringify({
+        JSON.stringify(
+          createCreateRun({
           id: 'run_strip_token',
           status: 'provisioning',
           webhookToken: 'provider-token',
-        }),
+          }),
+        ),
         { status: 200 },
       ),
     );
@@ -553,7 +621,7 @@ describe('SecurityPenetrationTestsService', () => {
   it('reads webhook status and report id from provider payload', () => {
     const webhookResult = service.handleWebhook(
       {
-        id: 'run_webhook',
+        runId: 'run_webhook',
         status: 'completed',
       },
       {
@@ -581,7 +649,7 @@ describe('SecurityPenetrationTestsService', () => {
 
     const webhookResult = await service.handleWebhook(
       {
-        id: 'run_webhook',
+        runId: 'run_webhook',
         status: 'completed',
       },
       {
@@ -624,7 +692,7 @@ describe('SecurityPenetrationTestsService', () => {
 
     const webhookResult = await service.handleWebhook(
       {
-        id: 'run_webhook',
+        runId: 'run_webhook',
         status: 'completed',
       },
       {
@@ -649,7 +717,7 @@ describe('SecurityPenetrationTestsService', () => {
     await expect(
       service.handleWebhook(
         {
-          id: 'run_missing',
+          runId: 'run_missing',
           status: 'completed',
         },
         {
@@ -659,10 +727,10 @@ describe('SecurityPenetrationTestsService', () => {
     ).rejects.toThrow(HttpException);
   });
 
-  it('uses reportStatus when id status fields are absent in webhook payload', () => {
+  it('uses reportStatus when status is only provided via reportStatus', () => {
     const webhookResult = service.handleWebhook(
       {
-        id: 'run_from_run_id',
+        runId: 'run_from_run_id',
         reportStatus: 'queued',
       },
       {
@@ -682,7 +750,7 @@ describe('SecurityPenetrationTestsService', () => {
   it('maps Maced completion webhook payload to completed status with report summary', () => {
     const webhookResult = service.handleWebhook(
       {
-        id: 'run_completed',
+        runId: 'run_completed',
         report: {
           markdown: '# Penetration test',
           costUsd: 49.11,
@@ -713,7 +781,7 @@ describe('SecurityPenetrationTestsService', () => {
   it('maps Maced failed webhook payload to failed status with failure details', () => {
     const webhookResult = service.handleWebhook(
       {
-        id: 'run_failed',
+        runId: 'run_failed',
         error: 'Workflow exited early',
         failedAt: '2026-02-28T21:30:00Z',
       },
@@ -737,7 +805,9 @@ describe('SecurityPenetrationTestsService', () => {
 
   it('throws when MACED API key is missing', async () => {
     process.env.MACED_API_KEY = '';
-    const serviceWithoutKey = new SecurityPenetrationTestsService();
+    const serviceWithoutKey = new SecurityPenetrationTestsService(
+      mockCredentialVaultService as unknown as CredentialVaultService,
+    );
 
     await expect(serviceWithoutKey.listReports('org_123')).rejects.toThrow(
       'Maced API key not configured on server',
@@ -750,11 +820,7 @@ describe('SecurityPenetrationTestsService', () => {
 
     fetchMock.mockResolvedValueOnce(
       new Response(
-        JSON.stringify({
-          id: 'run_output',
-          organizationId: 'org_123',
-          status: 'completed',
-        }),
+        JSON.stringify(createRunDetail({ id: 'run_output', status: 'completed' })),
         { status: 200 },
       ),
     );
@@ -789,11 +855,9 @@ describe('SecurityPenetrationTestsService', () => {
 
     fetchMock.mockResolvedValueOnce(
       new Response(
-        JSON.stringify({
-          id: 'run_output_no_type',
-          organizationId: 'org_123',
-          status: 'completed',
-        }),
+        JSON.stringify(
+          createRunDetail({ id: 'run_output_no_type', status: 'completed' }),
+        ),
         { status: 200 },
       ),
     );
@@ -811,7 +875,7 @@ describe('SecurityPenetrationTestsService', () => {
   });
 
   it('gets report data by id', async () => {
-    const fixtureReport = { id: 'run_123', status: 'completed' };
+    const fixtureReport = createRunDetail({ id: 'run_123', status: 'completed' });
 
     fetchMock.mockResolvedValueOnce(
       new Response(JSON.stringify(fixtureReport), { status: 200 }),
@@ -828,7 +892,10 @@ describe('SecurityPenetrationTestsService', () => {
         }),
       }),
     );
-    expect(report).toEqual(fixtureReport);
+    expect(report).toEqual({
+      ...fixtureReport,
+      failedReason: null,
+    });
   });
 
   it('maps invalid get report response to bad gateway', async () => {
@@ -851,14 +918,12 @@ describe('SecurityPenetrationTestsService', () => {
       new Response('', { status: 200 }),
     );
 
-    await expect(service.getReport('org_123', 'run_123')).rejects.toEqual(
-      expect.objectContaining({
-        status: HttpStatus.BAD_GATEWAY,
-        response: {
-          error: 'Empty response while fetching penetration test',
-        },
-      }),
-    );
+    await expect(service.getReport('org_123', 'run_123')).rejects.toMatchObject({
+      status: HttpStatus.BAD_GATEWAY,
+      response: {
+        error: 'Empty response while fetching penetration test run_123',
+      },
+    });
   });
 
   it('maps empty get progress response to bad gateway', async () => {
@@ -866,14 +931,14 @@ describe('SecurityPenetrationTestsService', () => {
       new Response('', { status: 200 }),
     );
 
-    await expect(service.getReportProgress('org_123', 'run_123')).rejects.toEqual(
-      expect.objectContaining({
-        status: HttpStatus.BAD_GATEWAY,
-        response: {
-          error: 'Empty response while fetching penetration test progress',
-        },
-      }),
-    );
+    await expect(
+      service.getReportProgress('org_123', 'run_123'),
+    ).rejects.toMatchObject({
+      status: HttpStatus.BAD_GATEWAY,
+      response: {
+        error: 'Empty response while fetching penetration test progress run_123',
+      },
+    });
   });
 
   it('maps invalid report progress payload to bad gateway', async () => {
@@ -897,11 +962,7 @@ describe('SecurityPenetrationTestsService', () => {
 
     fetchMock.mockResolvedValueOnce(
       new Response(
-        JSON.stringify({
-          id: 'run_pdf',
-          organizationId: 'org_123',
-          status: 'completed',
-        }),
+        JSON.stringify(createRunDetail({ id: 'run_pdf', status: 'completed' })),
         { status: 200 },
       ),
     );
