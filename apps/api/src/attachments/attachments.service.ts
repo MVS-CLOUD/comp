@@ -19,16 +19,18 @@ import { s3Client } from '@/app/s3';
 
 @Injectable()
 export class AttachmentsService {
-  private s3Client: S3Client | null;
+  private s3Client: S3Client;
   private bucketName: string;
+  private readonly s3Available: boolean;
   private readonly MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100MB
   private readonly SIGNED_URL_EXPIRY = 900; // 15 minutes
 
   constructor() {
     this.bucketName = process.env.APP_AWS_BUCKET_NAME || '';
-    this.s3Client = s3Client;
+    this.s3Available = !!s3Client;
+    this.s3Client = s3Client as S3Client;
 
-    if (!this.s3Client) {
+    if (!this.s3Available) {
       console.warn(
         'S3 Client is not initialized. Attachment features will be unavailable.',
       );
