@@ -108,37 +108,6 @@ export interface FullSession extends Session {
 }
 
 /**
- * When the multiSession() plugin is active, session tokens live in
- * `session_token_multi-{id}` cookies but better-auth's get-session only
- * reads the primary `session_token` cookie.  If the primary is missing
- * (common with cross-subdomain cookies), inject one from the first
- * available multi-session cookie so the API can resolve the session.
- */
-function ensurePrimarySessionCookie(cookieHeader: string): string {
-  const PRIMARY = '__Secure-better-auth.session_token';
-  const PRIMARY_PLAIN = 'better-auth.session_token';
-  const MULTI_PREFIX = 'better-auth.session_token_multi-';
-
-  const hasPrimary = cookieHeader
-    .split(';')
-    .some((c) => {
-      const name = c.trim().split('=')[0];
-      return name === PRIMARY || name === PRIMARY_PLAIN;
-    });
-
-  if (hasPrimary) return cookieHeader;
-
-  const multiCookie = cookieHeader
-    .split(';')
-    .find((c) => c.trim().split('=')[0]?.includes(MULTI_PREFIX));
-
-  if (!multiCookie) return cookieHeader;
-
-  const token = multiCookie.trim().split('=').slice(1).join('=');
-  return `${PRIMARY}=${token}; ${cookieHeader}`;
-}
-
-/**
  * Convert Headers to a plain object for fetch
  */
 function headersToObject(headers: ReadonlyHeaders | Headers): Record<string, string> {
@@ -149,11 +118,6 @@ function headersToObject(headers: ReadonlyHeaders | Headers): Record<string, str
       obj[key] = value;
     }
   });
-
-  if (obj.cookie) {
-    obj.cookie = ensurePrimarySessionCookie(obj.cookie);
-  }
-
   if (!obj.origin && !obj.Origin) {
     obj.origin = API_URL;
   }
@@ -178,13 +142,13 @@ async function getSession(options: { headers: ReadonlyHeaders | Headers }): Prom
     });
 
     if (!response.ok) {
-      console.error(
-        `[auth] get-session failed: ${response.status} ${response.statusText} (API: ${API_URL})`,
-      );
       return null;
     }
 
     const data = await response.json();
+    if (!data?.session?.id || !data?.user?.id) {
+      return null;
+    }
     return data as Session;
   } catch (error) {
     console.error('[auth] Failed to get session:', error);
