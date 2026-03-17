@@ -1,6 +1,7 @@
 'use client';
 
 import { env } from '@/env.mjs';
+import { getClientOrganizationId } from './organization-id';
 
 interface ApiCallOptions extends Omit<RequestInit, 'headers'> {
   organizationId?: string;
@@ -15,7 +16,8 @@ export interface ApiResponse<T = unknown> {
 
 /**
  * API client for calling our internal NestJS API
- * Uses session cookies for authentication (via credentials: 'include')
+ * Uses session cookies for authentication (via credentials: 'include') and
+ * falls back to the current org-scoped pathname when no org header is provided.
  */
 export class ApiClient {
   private baseUrl: string;
@@ -29,14 +31,15 @@ export class ApiClient {
     options: ApiCallOptions = {},
   ): Promise<ApiResponse<T>> {
     const { organizationId, headers: customHeaders, ...fetchOptions } = options;
+    const resolvedOrganizationId = getClientOrganizationId(organizationId);
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...customHeaders,
     };
 
-    if (organizationId) {
-      headers['X-Organization-Id'] = organizationId;
+    if (resolvedOrganizationId) {
+      headers['X-Organization-Id'] = resolvedOrganizationId;
     }
 
     try {
@@ -84,13 +87,14 @@ export class ApiClient {
     options: ApiCallOptions = {},
   ): Promise<Response> {
     const { organizationId, headers: customHeaders, ...fetchOptions } = options;
+    const resolvedOrganizationId = getClientOrganizationId(organizationId);
 
     const headers: Record<string, string> = {
       ...customHeaders,
     };
 
-    if (organizationId) {
-      headers['X-Organization-Id'] = organizationId;
+    if (resolvedOrganizationId) {
+      headers['X-Organization-Id'] = resolvedOrganizationId;
     }
 
     return fetch(`${this.baseUrl}${endpoint}`, {

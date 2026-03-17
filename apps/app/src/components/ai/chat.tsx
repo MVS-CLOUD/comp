@@ -32,7 +32,6 @@ import {
 } from '@/components/ai-elements/reasoning';
 import { Tool, ToolHeader, ToolContent } from '@/components/ai-elements/tool';
 import { LogoSpinner } from '../logo-spinner';
-import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 
 const API_URL = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 
@@ -125,16 +124,19 @@ export default function Chat() {
 
   const transport = new DefaultChatTransport({
     api: `${API_URL}/v1/assistant-chat/completions`,
+    headers: () =>
+      resolvedOrganizationId
+        ? { 'X-Organization-Id': resolvedOrganizationId }
+        : {},
     credentials: 'include',
   });
 
-  const { messages, sendMessage, error, status, stop, setMessages } = useChat({
+  const { messages, sendMessage, error, status, setMessages } = useChat<UIMessage>({
     id:
       resolvedOrganizationId && userId
         ? `assistant-chat:v1:${resolvedOrganizationId}:${userId}`
         : undefined,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    transport: transport as any,
+    transport,
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
   });
 
@@ -177,8 +179,7 @@ export default function Chat() {
         parts: [{ type: 'text' as const, text: m.text }],
       }));
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setMessages(uiMessages as any);
+      setMessages(uiMessages);
       isHydratingRef.current = false;
     })();
 

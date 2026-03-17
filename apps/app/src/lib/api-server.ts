@@ -1,5 +1,6 @@
 import { env } from '@/env.mjs';
 import { headers } from 'next/headers';
+import { extractOrganizationIdFromPath } from './organization-id';
 
 export interface ApiResponse<T = unknown> {
   data?: T;
@@ -14,8 +15,8 @@ interface CallOptions {
 
 /**
  * Server-side API client for calling our internal NestJS API from server components.
- * Forwards cookies for authentication — API resolves the session (including
- * activeOrganizationId) via better-auth, so no X-Organization-Id header is needed.
+ * Forwards cookies for authentication and infers org scope from the forwarded
+ * request pathname when the route is org-scoped.
  */
 async function call<T = unknown>(
   endpoint: string,
@@ -30,9 +31,15 @@ async function call<T = unknown>(
 
   // Forward cookies for auth - better-auth handles session validation
   const headerStore = await headers();
+  const requestedPath =
+    headerStore.get('x-pathname') || headerStore.get('referer') || '';
+  const organizationId = extractOrganizationIdFromPath(requestedPath);
   const cookieHeader = headerStore.get('cookie');
   if (cookieHeader) {
     requestHeaders['Cookie'] = cookieHeader;
+  }
+  if (organizationId) {
+    requestHeaders['X-Organization-Id'] = organizationId;
   }
 
   try {

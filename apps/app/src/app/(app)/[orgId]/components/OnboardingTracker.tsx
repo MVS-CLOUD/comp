@@ -31,23 +31,6 @@ const ONBOARDING_STEPS = [
   { key: 'policies', label: 'Tailoring Policies', order: 3 },
 ] as const;
 
-const IN_PROGRESS_STATUSES = [
-  'QUEUED',
-  'EXECUTING',
-  'WAITING_FOR_DEPLOY',
-  'REATTEMPTING',
-  'FROZEN',
-  'DELAYED',
-];
-
-const getFriendlyStatusName = (status: string): string => {
-  if (!status) return 'Unknown';
-  return status
-    .toLowerCase()
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-};
-
 export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) => {
   const triggerJobId = onboarding.triggerJobId;
   const organizationId = onboarding.organizationId;
@@ -198,7 +181,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
       setIsRisksExpanded(false);
       setIsPoliciesExpanded(true);
     }
-  }, [currentStep?.key, stepStatus.vendorsTotal, stepStatus.risksTotal, stepStatus.policiesTotal]);
+  }, [currentStep, stepStatus.policiesTotal, stepStatus.risksTotal, stepStatus.vendorsTotal]);
 
   // Build dynamic current step message with progress
   const currentStepMessage = useMemo(() => {
@@ -378,7 +361,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
     if (!run && !error) {
       return (
         <div className="flex items-center gap-3">
-          <Loader2 className="h-5 w-5 shrink-0 text-primary" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
+          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
           <div className="flex-1 min-w-0">
             <p className="text-base font-medium text-foreground">Initializing...</p>
             <p className="text-muted-foreground text-sm mt-1">Checking onboarding status</p>
@@ -404,8 +387,6 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
         </div>
       );
     }
-
-    const friendlyStatus = getFriendlyStatusName(run.status);
 
     switch (run.status) {
       case 'WAITING':
@@ -497,7 +478,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                         {isCompleted ? (
                           <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
                         ) : isCurrent || isActivelyProcessing ? (
-                          <Loader2 className="h-5 w-5 shrink-0 text-primary" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
+                          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
                         ) : vendorsQueued ? (
                           <Clock3 className="h-5 w-5 shrink-0 text-muted-foreground" />
                         ) : (
@@ -549,7 +530,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                                   {isVendorCompleted ? (
                                     <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" />
                                   ) : isVendorProcessing ? (
-                                    <Loader2 className="h-4 w-4 shrink-0 text-primary pointer-events-none" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
+                                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary pointer-events-none" />
                                   ) : isVendorQueued ? (
                                     <Clock3 className="h-4 w-4 shrink-0 text-muted-foreground pointer-events-none" />
                                   ) : (
@@ -603,7 +584,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                         {isCompleted ? (
                           <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
                         ) : isCurrent || isActivelyProcessing ? (
-                          <Loader2 className="h-5 w-5 shrink-0 text-primary" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
+                          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
                         ) : risksQueued ? (
                           <Clock3 className="h-5 w-5 shrink-0 text-muted-foreground" />
                         ) : (
@@ -654,7 +635,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                                   {isRiskCompleted ? (
                                     <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" />
                                   ) : isRiskProcessing ? (
-                                    <Loader2 className="h-4 w-4 shrink-0 text-primary pointer-events-none" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
+                                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary pointer-events-none" />
                                   ) : (
                                     <div className="h-4 w-4 shrink-0 rounded-full border-2 border-muted pointer-events-none" />
                                   )}
@@ -706,7 +687,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                         {isCompleted ? (
                           <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
                         ) : isCurrent || isActivelyProcessing ? (
-                          <Loader2 className="h-5 w-5 shrink-0 text-primary" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
+                          <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
                         ) : policiesQueued ? (
                           <Clock3 className="h-5 w-5 shrink-0 text-muted-foreground" />
                         ) : (
@@ -760,7 +741,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                                   {isPolicyCompleted ? (
                                     <CheckCircle2 className="text-primary h-4 w-4 shrink-0 pointer-events-none" />
                                   ) : isPolicyProcessing ? (
-                                    <Loader2 className="h-4 w-4 shrink-0 text-primary pointer-events-none" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
+                                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary pointer-events-none" />
                                   ) : isPolicyQueued ? (
                                     <Clock3 className="h-4 w-4 shrink-0 text-muted-foreground pointer-events-none" />
                                   ) : (
@@ -809,7 +790,7 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
                     {isCompleted ? (
                       <CheckCircle2 className="text-primary h-5 w-5 shrink-0" />
                     ) : isCurrent ? (
-                      <Loader2 className="h-5 w-5 shrink-0 text-primary" style={{ animation: 'spin 1s linear infinite', animationDelay: `${-(Date.now() % 1000)}ms` }} />
+                      <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
                     ) : policiesQueued ? (
                       <Clock3 className="h-5 w-5 shrink-0 text-muted-foreground" />
                     ) : (
@@ -878,9 +859,6 @@ export const OnboardingTracker = ({ onboarding }: { onboarding: Onboarding }) =>
       case 'SYSTEM_FAILURE':
       case 'EXPIRED':
       case 'TIMED_OUT': {
-        const errorMessage = run.error?.message || 'An unexpected issue occurred.';
-        const truncatedMessage =
-          errorMessage.length > 60 ? `${errorMessage.substring(0, 57)}...` : errorMessage;
         return (
           <div className="flex flex-col gap-3">
             <div className="flex items-start gap-3">
