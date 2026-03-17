@@ -124,7 +124,7 @@ export default function Chat() {
 
   const transport = new DefaultChatTransport({
     api: `${API_URL}/v1/assistant-chat/completions`,
-    headers: () =>
+    headers: (): Record<string, string> =>
       resolvedOrganizationId
         ? { 'X-Organization-Id': resolvedOrganizationId }
         : {},
