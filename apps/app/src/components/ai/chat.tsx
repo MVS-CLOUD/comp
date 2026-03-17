@@ -1,28 +1,38 @@
 'use client';
 
+import { env } from '@/env.mjs';
+import { useSession } from '@/utils/auth-client';
+import { useChat } from '@ai-sdk/react';
+import { Button } from '@comp/ui/button';
+import {
+  DefaultChatTransport,
+  isToolUIPart,
+  lastAssistantMessageIsCompleteWithToolCalls,
+} from 'ai';
+import type { UIMessage } from 'ai';
+import { useActiveOrganization } from '@/utils/auth-client';
+import { apiClient } from '@/lib/api-client';
+import { useParams } from 'next/navigation';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import {
   Conversation,
   ConversationContent,
   ConversationEmptyState,
   ConversationScrollButton,
 } from '@/components/ai-elements/conversation';
-import { Message, MessageContent, MessageResponse } from '@/components/ai-elements/message';
-import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/ai-elements/reasoning';
-import { Tool, ToolContent, ToolHeader } from '@/components/ai-elements/tool';
-import { env } from '@/env.mjs';
-import { apiClient } from '@/lib/api-client';
-import { useActiveOrganization, useSession } from '@/utils/auth-client';
-import { useChat } from '@ai-sdk/react';
-import { Button } from '@trycompai/design-system';
-import type { UIMessage } from 'ai';
 import {
-  DefaultChatTransport,
-  isToolUIPart,
-  lastAssistantMessageIsCompleteWithToolCalls,
-} from 'ai';
-import { useParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+  Message,
+  MessageContent,
+  MessageResponse,
+} from '@/components/ai-elements/message';
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from '@/components/ai-elements/reasoning';
+import { Tool, ToolHeader, ToolContent } from '@/components/ai-elements/tool';
 import { LogoSpinner } from '../logo-spinner';
+import { Avatar, AvatarFallback, AvatarImage } from '@comp/ui/avatar';
 
 const API_URL = env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
 
@@ -46,7 +56,8 @@ function MessageParts({
   const reasoningText = reasoningParts.map((p) => p.text).join('\n\n');
   const hasReasoning = reasoningParts.length > 0;
   const lastPart = message.parts.at(-1);
-  const isReasoningStreaming = isLastMessage && isStreaming && lastPart?.type === 'reasoning';
+  const isReasoningStreaming =
+    isLastMessage && isStreaming && lastPart?.type === 'reasoning';
 
   return (
     <>
@@ -58,7 +69,11 @@ function MessageParts({
       )}
       {message.parts.map((part, i) => {
         if (part.type === 'text') {
-          return <MessageResponse key={`${message.id}-${i}`}>{part.text}</MessageResponse>;
+          return (
+            <MessageResponse key={`${message.id}-${i}`}>
+              {part.text}
+            </MessageResponse>
+          );
         }
         if (isToolUIPart(part)) {
           if (part.state === 'output-available') return null;
@@ -67,13 +82,7 @@ function MessageParts({
             <Tool key={`${message.id}-tool-${i}`}>
               <ToolHeader
                 type={toolType}
-                state={
-                  part.state as
-                    | 'input-streaming'
-                    | 'input-available'
-                    | 'output-available'
-                    | 'output-error'
-                }
+                state={part.state as "input-streaming" | "input-available" | "output-available" | "output-error"}
               />
               <ToolContent />
             </Tool>
@@ -117,17 +126,9 @@ export default function Chat() {
   const transport = new DefaultChatTransport({
     api: `${API_URL}/v1/assistant-chat/completions`,
     credentials: 'include',
-    headers: () => {
-      const organizationId = resolvedOrganizationIdRef.current;
-      const headers: Record<string, string> = {};
-      if (organizationId) {
-        headers['X-Organization-Id'] = organizationId;
-      }
-      return headers;
-    },
   });
 
-  const { messages, sendMessage, error, status, setMessages } = useChat({
+  const { messages, sendMessage, error, status, stop, setMessages } = useChat({
     id:
       resolvedOrganizationId && userId
         ? `assistant-chat:v1:${resolvedOrganizationId}:${userId}`
@@ -152,7 +153,6 @@ export default function Chat() {
     void (async () => {
       const res = await apiClient.get<{ messages: AssistantStoredMessage[] }>(
         '/v1/assistant-chat/history',
-        orgIdAtStart,
       );
 
       if (res.error || res.status !== 200) {
@@ -226,11 +226,13 @@ export default function Chat() {
 
     const delayMs = isLoading ? 300 : 0;
     const timeout = window.setTimeout(() => {
-      void apiClient.call('/v1/assistant-chat/history', {
-        method: 'PUT',
-        body: JSON.stringify({ messages: storedMessages }),
-        organizationId: resolvedOrganizationId,
-      });
+      void apiClient.call(
+        '/v1/assistant-chat/history',
+        {
+          method: 'PUT',
+          body: JSON.stringify({ messages: storedMessages }),
+        },
+      );
     }, delayMs);
 
     return () => window.clearTimeout(timeout);
@@ -244,12 +246,14 @@ export default function Chat() {
       const snapshot = latestSnapshotRef.current;
       if (!snapshot || snapshot.messages.length === 0) return;
 
-      void apiClient.call('/v1/assistant-chat/history', {
-        method: 'PUT',
-        body: JSON.stringify({ messages: snapshot.messages }),
-        keepalive: true,
-        organizationId: snapshot.organizationId,
-      });
+      void apiClient.call(
+        '/v1/assistant-chat/history',
+        {
+          method: 'PUT',
+          body: JSON.stringify({ messages: snapshot.messages }),
+          keepalive: true,
+        },
+      );
     };
   }, [resolvedOrganizationId, userId]);
 
@@ -265,7 +269,7 @@ export default function Chat() {
           disabled={isLoading || messages.length === 0 || !resolvedOrganizationId || !userId}
           onClick={() => {
             if (!resolvedOrganizationId || !userId) return;
-            void apiClient.delete('/v1/assistant-chat/history', resolvedOrganizationId);
+            void apiClient.delete('/v1/assistant-chat/history');
             setMessages([]);
             setInput('');
           }}
@@ -286,7 +290,7 @@ export default function Chat() {
           {messages.length === 0 && !error ? (
             <ConversationEmptyState
               icon={<LogoSpinner />}
-              title="Hi there, how can I help you today?"
+              title={`Hi ${session?.user?.name?.split(' ').at(0) ?? ''}, how can I help you today?`}
             />
           ) : (
             messages.map((message, index) => (
@@ -309,7 +313,9 @@ export default function Chat() {
                       <div className="flex h-5 w-5 shrink-0 items-center justify-center text-foreground">
                         <LogoSpinner size={16} isDisabled={false} />
                       </div>
-                      <span className="text-xs font-semibold text-foreground">Comp AI</span>
+                      <span className="text-xs font-semibold text-foreground">
+                        Comp AI
+                      </span>
                     </div>
                     <MessageContent className="pl-7">
                       <MessageParts

@@ -44,10 +44,10 @@ export class HybridAuthGuard implements CanActivate {
     }
 
     // Try session-based authentication (bearer token or cookies)
-    const skipOrgCheck = this.reflector.getAllAndOverride<boolean>(
-      SKIP_ORG_CHECK_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const skipOrgCheck = this.reflector.getAllAndOverride<boolean>(SKIP_ORG_CHECK_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
     return this.handleSessionAuth(request, skipOrgCheck);
   }
 
@@ -158,17 +158,7 @@ export class HybridAuthGuard implements CanActivate {
         );
       }
 
-      const requestedOrganizationIdHeader =
-        request.headers['x-organization-id'];
-      const requestedOrganizationId = Array.isArray(
-        requestedOrganizationIdHeader,
-      )
-        ? requestedOrganizationIdHeader[0]?.trim() || undefined
-        : typeof requestedOrganizationIdHeader === 'string'
-          ? requestedOrganizationIdHeader.trim() || undefined
-          : undefined;
-      const organizationId =
-        requestedOrganizationId ?? sessionData.activeOrganizationId;
+      const organizationId = sessionData.activeOrganizationId;
       if (!organizationId && !skipOrgCheck) {
         throw new UnauthorizedException(
           'No active organization. Please select an organization.',
