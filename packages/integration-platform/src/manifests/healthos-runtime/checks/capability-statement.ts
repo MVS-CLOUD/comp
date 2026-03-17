@@ -16,6 +16,8 @@ export const capabilityStatementCheck: IntegrationCheck = {
   name: 'FHIR capability statement coverage',
   description:
     'Verify the FHIR CapabilityStatement is reachable and exposes a minimum expected resource set.',
+  standardReference: '§170.315(g)(10); HL7 FHIR CapabilityStatement',
+  validatorName: 'HealthOS Runtime Harness',
   taskMapping: TASK_TEMPLATES.smartFhirRuntimeChecks,
   defaultSeverity: 'high',
   variables: [fhirBaseUrlVariable],

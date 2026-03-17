@@ -42,6 +42,7 @@ export const ingestValidatorResultsTask = schemaTask({
         artifactType,
         evidenceClass: 'deterministic',
         gateEligible: true,
+        reviewStatus: 'approved',
         storageUrl: artifactUrl,
       },
     });

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -49,7 +50,22 @@ export class ReleaseReadinessService {
       throw new NotFoundException('Release subject not found');
     }
 
-    return this.repository.createDefinition({
+    const checkBindings = dto.checkBindings ?? [];
+    if (checkBindings.length > 0) {
+      const connectionIds = [...new Set(checkBindings.map((binding) => binding.connectionId))];
+      const connections = await this.repository.findConnectionsByIds(
+        connectionIds,
+        organizationId,
+      );
+
+      if (connections.length !== connectionIds.length) {
+        throw new BadRequestException(
+          'One or more release definition check bindings reference invalid connections.',
+        );
+      }
+    }
+
+    const definition = await this.repository.createDefinition({
       organizationId,
       releaseSubjectId: dto.releaseSubjectId,
       name: dto.name,
@@ -59,6 +75,20 @@ export class ReleaseReadinessService {
       requiredApprovalKeys: dto.requiredApprovalKeys ?? [],
       requiredExternalValidationKeys: dto.requiredExternalValidationKeys ?? [],
     });
+
+    await this.repository.replaceDefinitionCheckBindings(
+      definition.id,
+      checkBindings.map((binding) => ({
+        releaseDefinitionId: definition.id,
+        checkId: binding.checkId,
+        connectionId: binding.connectionId,
+        variableOverrides: binding.variableOverrides ?? null,
+        freshnessHours: binding.freshnessHours ?? 24,
+        blocking: binding.blocking ?? true,
+      })),
+    );
+
+    return this.repository.findDefinitionById(definition.id, organizationId);
   }
 
   listRuns(organizationId: string) {

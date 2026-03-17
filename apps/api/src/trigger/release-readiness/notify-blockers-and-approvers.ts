@@ -83,6 +83,7 @@ export const notifyBlockersAndApproversTask = schemaTask({
         artifactType: 'release_notification',
         evidenceClass: 'manual_attested',
         gateEligible: false,
+        reviewStatus: 'approved',
         metadata: {
           decision,
           summary,

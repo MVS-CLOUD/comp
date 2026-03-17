@@ -35,7 +35,8 @@ export type SOAStreamSender = (data: {
 }) => void;
 
 /**
- * Creates a default YES result (used when insufficient data)
+ * Creates a default result for insufficient data.
+ * This remains non-authoritative and must be reviewed by a human.
  */
 export function createDefaultYesResult(
   questionId: string,
@@ -47,17 +48,17 @@ export function createDefaultYesResult(
     questionId,
     questionIndex: index,
     isApplicable: true,
-    justification: null,
-    success: true,
-    insufficientData: false,
+    justification: 'Insufficient evidence found. Human review required.',
+    success: false,
+    insufficientData: true,
   });
 
   return {
     questionId,
     isApplicable: true,
-    justification: null,
-    success: true,
-    insufficientData: false,
+    justification: 'Insufficient evidence found. Human review required.',
+    success: false,
+    insufficientData: true,
   };
 }
 

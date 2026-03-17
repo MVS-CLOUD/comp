@@ -196,6 +196,9 @@ export const runConnectionChecks = task({
           resourceId: finding.resourceId,
           severity: finding.severity,
           remediation: finding.remediation,
+          standardReference:
+            finding.standardReference || checkResult.standardReference,
+          validatorName: finding.validatorName || checkResult.validatorName,
           evidence: JSON.parse(JSON.stringify(finding.evidence || {})),
         })),
         ...checkResult.result.passingResults.map((passing) => ({
@@ -207,6 +210,9 @@ export const runConnectionChecks = task({
           resourceId: passing.resourceId,
           severity: 'info' as const,
           remediation: undefined,
+          standardReference:
+            passing.standardReference || checkResult.standardReference,
+          validatorName: passing.validatorName || checkResult.validatorName,
           evidence: JSON.parse(JSON.stringify(passing.evidence || {})),
         })),
       ]);

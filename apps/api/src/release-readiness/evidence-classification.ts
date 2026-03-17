@@ -9,11 +9,19 @@ export const NON_GATING_EVIDENCE_CLASSES = [
   'browser_collected',
 ] as const;
 
+export const REVIEW_REQUIRED_EVIDENCE_CLASSES = [
+  'ai_assisted',
+  'browser_collected',
+] as const;
+
 export type GateEligibleEvidenceClass =
   (typeof GATE_ELIGIBLE_EVIDENCE_CLASSES)[number];
 
 export type NonGatingEvidenceClass =
   (typeof NON_GATING_EVIDENCE_CLASSES)[number];
+
+export type ReviewRequiredEvidenceClass =
+  (typeof REVIEW_REQUIRED_EVIDENCE_CLASSES)[number];
 
 export function isGateEligibleEvidenceClass(
   value: string | null | undefined,
@@ -28,5 +36,13 @@ export function isNonGatingEvidenceClass(
 ): value is NonGatingEvidenceClass {
   return NON_GATING_EVIDENCE_CLASSES.includes(
     value as NonGatingEvidenceClass,
+  );
+}
+
+export function requiresEvidenceReview(
+  value: string | null | undefined,
+): value is ReviewRequiredEvidenceClass {
+  return REVIEW_REQUIRED_EVIDENCE_CLASSES.includes(
+    value as ReviewRequiredEvidenceClass,
   );
 }

@@ -26,6 +26,14 @@ type ReleaseDefinitionRecord = {
   requiredCheckIds: string[];
   requiredApprovalKeys: string[];
   requiredExternalValidationKeys: string[];
+  checkBindings?: Array<{
+    id: string;
+    checkId: string;
+    connectionId: string;
+    freshnessHours: number;
+    blocking: boolean;
+    variableOverrides: JsonValue;
+  }>;
 };
 
 type ReleaseRunRecord = {
@@ -64,6 +72,10 @@ type ReleaseDb = typeof db & {
     create(args: Record<string, unknown>): Promise<ReleaseDefinitionRecord>;
     findFirst(args: Record<string, unknown>): Promise<ReleaseDefinitionRecord | null>;
   };
+  releaseDefinitionCheckBinding: {
+    createMany(args: Record<string, unknown>): Promise<unknown>;
+    deleteMany(args: Record<string, unknown>): Promise<unknown>;
+  };
   releaseRun: {
     findMany(args: Record<string, unknown>): Promise<ReleaseRunRecord[]>;
     create(args: Record<string, unknown>): Promise<ReleaseRunRecord>;
@@ -93,6 +105,9 @@ type ReleaseDb = typeof db & {
   integrationCheckRun: {
     findMany(args: Record<string, unknown>): Promise<IntegrationCheckRunRecord[]>;
     createMany(args: Record<string, unknown>): Promise<unknown>;
+  };
+  integrationConnection: {
+    findMany(args: Record<string, unknown>): Promise<Array<{ id: string; organizationId: string }>>;
   };
   evidenceArtifact: {
     create(args: Record<string, unknown>): Promise<{ id: string }>;
@@ -129,6 +144,11 @@ export class ReleaseReadinessRepository {
   findDefinitions(organizationId: string) {
     return this.releaseDb.releaseDefinition.findMany({
       where: { organizationId },
+      include: {
+        checkBindings: {
+          orderBy: { checkId: 'asc' },
+        },
+      },
       orderBy: { name: 'asc' },
     });
   }
@@ -140,6 +160,38 @@ export class ReleaseReadinessRepository {
   findDefinitionById(id: string, organizationId: string) {
     return this.releaseDb.releaseDefinition.findFirst({
       where: { id, organizationId },
+      include: {
+        checkBindings: {
+          orderBy: { checkId: 'asc' },
+        },
+      },
+    });
+  }
+
+  findConnectionsByIds(connectionIds: string[], organizationId: string) {
+    return this.releaseDb.integrationConnection.findMany({
+      where: {
+        id: { in: connectionIds },
+        organizationId,
+      },
+      select: { id: true, organizationId: true },
+    });
+  }
+
+  async replaceDefinitionCheckBindings(
+    releaseDefinitionId: string,
+    bindings: Array<Record<string, unknown>>,
+  ) {
+    await this.releaseDb.releaseDefinitionCheckBinding.deleteMany({
+      where: { releaseDefinitionId },
+    });
+
+    if (bindings.length === 0) {
+      return;
+    }
+
+    await this.releaseDb.releaseDefinitionCheckBinding.createMany({
+      data: bindings,
     });
   }
 

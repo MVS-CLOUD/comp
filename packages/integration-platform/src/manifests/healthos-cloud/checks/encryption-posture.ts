@@ -15,6 +15,8 @@ export const cloudEncryptionPostureCheck: IntegrationCheck = {
   name: 'Cloud encryption posture',
   description:
     'Verify cloud encryption-at-rest and related posture expectations through a deterministic verification endpoint.',
+  standardReference: 'Internal release baseline; cloud encryption posture',
+  validatorName: 'HealthOS Cloud Harness',
   defaultSeverity: 'high',
   variables: [cloudVerificationBaseUrlVariable, cloudScopeVariable],
   run: async (ctx) => {

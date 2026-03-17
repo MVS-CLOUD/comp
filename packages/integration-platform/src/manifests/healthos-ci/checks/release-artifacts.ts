@@ -15,6 +15,8 @@ export const ciReleaseArtifactsCheck: IntegrationCheck = {
   name: 'Release artifacts available',
   description:
     'Verify the required release artifacts and provenance metadata are available for the targeted release.',
+  standardReference: 'Internal release baseline; release artifacts',
+  validatorName: 'HealthOS CI Harness',
   defaultSeverity: 'high',
   variables: [ciVerificationBaseUrlVariable, releaseIdentifierVariable],
   run: async (ctx) => {

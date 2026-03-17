@@ -38,9 +38,13 @@ export const FrameworkEditorVideoSchema = z.object({
 export const FrameworkEditorFrameworkSchema = z.object({
   id: z.string().optional(), // @id @default
   name: z.string(),
+  slug: z.string(),
+  catalog: z.string().optional(),
   version: z.string(),
   description: z.string(),
   visible: z.boolean().optional(), // @default(true)
+  sourceVersion: z.string().optional(),
+  sourceBundleHash: z.string().optional(),
   // requirements: FrameworkEditorRequirement[] - relational, omitted
   // frameworkInstances: FrameworkInstance[] - relational, omitted
   createdAt: z
@@ -68,6 +72,7 @@ export const FrameworkEditorRequirementSchema = z.object({
   name: z.string(),
   identifier: z.string().optional(), // @default("")
   description: z.string(),
+  sourceMetadata: z.any().optional(),
   // controlTemplates: FrameworkEditorControlTemplate[] - relational, omitted
   // requirementMaps: RequirementMap[] - relational, omitted
   createdAt: z
@@ -95,6 +100,7 @@ export const FrameworkEditorPolicyTemplateSchema = z.object({
   frequency: z.string(), // Placeholder for Frequency enum
   department: z.string(), // Placeholder for Departments enum
   content: z.any(), // Json
+  sourceMetadata: z.any().optional(),
   // controlTemplates: FrameworkEditorControlTemplate[] - relational, omitted
   createdAt: z
     .preprocess(
@@ -122,6 +128,7 @@ export const FrameworkEditorTaskTemplateSchema = z.object({
   frequency: z.string(), // Placeholder for Frequency enum
   department: z.string(), // Placeholder for Departments enum
   automationStatus: z.enum(['AUTOMATED', 'MANUAL']).optional(), // @default(AUTOMATED)
+  sourceMetadata: z.any().optional(),
   // controlTemplates: FrameworkEditorControlTemplate[] - relational, omitted
   createdAt: z
     .preprocess(
@@ -146,6 +153,7 @@ export const FrameworkEditorControlTemplateSchema = z.object({
   id: z.string().optional(), // @id @default
   name: z.string(),
   description: z.string(),
+  sourceMetadata: z.any().optional(),
   // policyTemplates: FrameworkEditorPolicyTemplate[] - relational, omitted
   // requirements: FrameworkEditorRequirement[] - relational, omitted
   // taskTemplates: FrameworkEditorTaskTemplate[] - relational, omitted

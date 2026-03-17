@@ -9,6 +9,8 @@ export const partnerStatusMappingCheck: IntegrationCheck = {
   name: 'Partner status mapping verification',
   description:
     'Verify the partner status-mapping and idempotency harness is healthy and returning structured readiness data.',
+  standardReference: 'Partner readiness; status mapping and idempotency',
+  validatorName: 'HealthOS Partner Harness',
   taskMapping: TASK_TEMPLATES.doseSpotScenarioVerification,
   defaultSeverity: 'high',
   variables: [verificationBaseUrlVariable],

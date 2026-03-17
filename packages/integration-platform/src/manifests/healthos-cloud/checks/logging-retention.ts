@@ -16,6 +16,8 @@ export const cloudLoggingRetentionCheck: IntegrationCheck = {
   name: 'Cloud logging and retention',
   description:
     'Verify critical cloud logging and retention expectations through a deterministic verification endpoint.',
+  standardReference: 'Internal release baseline; cloud logging retention',
+  validatorName: 'HealthOS Cloud Harness',
   taskMapping: TASK_TEMPLATES.monitoringAlerting,
   defaultSeverity: 'high',
   variables: [cloudVerificationBaseUrlVariable, cloudScopeVariable],

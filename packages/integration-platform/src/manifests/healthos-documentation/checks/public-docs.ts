@@ -7,6 +7,8 @@ export const publicDocumentationCheck: IntegrationCheck = {
   name: 'Public developer documentation available',
   description:
     'Verify the public developer documentation URL is reachable and returns content.',
+  standardReference: '§170.404; API Conditions and Maintenance of Certification',
+  validatorName: 'HealthOS Documentation Harness',
   taskMapping: TASK_TEMPLATES.smartFhirRuntimeChecks,
   defaultSeverity: 'high',
   variables: [documentationBaseUrlVariable],

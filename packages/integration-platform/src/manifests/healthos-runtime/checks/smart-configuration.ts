@@ -14,6 +14,8 @@ export const smartConfigurationCheck: IntegrationCheck = {
   name: 'SMART configuration published',
   description:
     'Verify the SMART discovery document is reachable and includes the required authorization metadata.',
+  standardReference: '§170.315(g)(10); SMART App Launch',
+  validatorName: 'HealthOS Runtime Harness',
   taskMapping: TASK_TEMPLATES.smartFhirRuntimeChecks,
   defaultSeverity: 'critical',
   variables: [fhirBaseUrlVariable],
