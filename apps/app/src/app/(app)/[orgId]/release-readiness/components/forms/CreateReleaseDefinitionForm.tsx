@@ -35,6 +35,11 @@ export type CreateReleaseDefinitionInput = {
   requiredCheckIds?: string[];
   requiredApprovalKeys?: string[];
   requiredExternalValidationKeys?: string[];
+  checkBindings?: Array<{
+    checkId: string;
+    connectionId: string;
+    variableOverrides?: Record<string, unknown>;
+  }>;
 };
 
 type CreateReleaseDefinitionFormProps = {

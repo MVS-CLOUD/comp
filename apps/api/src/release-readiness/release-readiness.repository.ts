@@ -60,6 +60,25 @@ type ExternalValidationRecord = {
   validTo?: Date | null;
 };
 type IntegrationCheckRunRecord = { checkId: string };
+type FrameworkLibraryRecord = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  version: string;
+  visible: boolean;
+};
+type ActiveConnectionRecord = {
+  id: string;
+  status: string;
+  variables: Record<string, unknown> | null;
+  metadata: Record<string, unknown> | null;
+  lastSyncAt: Date | null;
+  provider: {
+    slug: string;
+    name: string;
+  };
+};
 
 type ReleaseDb = typeof db & {
   releaseSubject: {
@@ -84,6 +103,9 @@ type ReleaseDb = typeof db & {
   };
   frameworkInstance: {
     count(args: Record<string, unknown>): Promise<number>;
+  };
+  frameworkEditorFramework: {
+    findMany(args: Record<string, unknown>): Promise<FrameworkLibraryRecord[]>;
   };
   manualAttestation: {
     count(args: Record<string, unknown>): Promise<number>;
@@ -176,6 +198,45 @@ export class ReleaseReadinessRepository {
       },
       select: { id: true, organizationId: true },
     });
+  }
+
+  findHealthcareFrameworkLibrary(frameworkIds: string[]) {
+    return this.releaseDb.frameworkEditorFramework.findMany({
+      where: {
+        id: { in: frameworkIds },
+        visible: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  findActiveConnectionsByProviderSlugs(
+    organizationId: string,
+    providerSlugs: string[],
+  ) {
+    return this.releaseDb.integrationConnection.findMany({
+      where: {
+        organizationId,
+        status: 'active',
+        provider: {
+          slug: { in: providerSlugs },
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+        variables: true,
+        metadata: true,
+        lastSyncAt: true,
+        provider: {
+          select: {
+            slug: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    }) as Promise<ActiveConnectionRecord[]>;
   }
 
   async replaceDefinitionCheckBindings(

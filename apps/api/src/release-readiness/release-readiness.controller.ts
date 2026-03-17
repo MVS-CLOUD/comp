@@ -22,6 +22,8 @@ import { CreateManualAttestationDto } from './dto/create-manual-attestation.dto'
 import { CreateExternalValidationDto } from './dto/create-external-validation.dto';
 import { UpdateManualAttestationStatusDto } from './dto/update-manual-attestation-status.dto';
 import { UpdateExternalValidationStatusDto } from './dto/update-external-validation-status.dto';
+import { ReleaseReadinessWizardService } from './release-readiness-wizard.service';
+import { OrchestrateHealthOSWizardDto } from './dto/orchestrate-healthos-wizard.dto';
 
 @ApiTags('Release Readiness')
 @Controller({ path: 'release-readiness', version: '1' })
@@ -37,7 +39,23 @@ import { UpdateExternalValidationStatusDto } from './dto/update-external-validat
 export class ReleaseReadinessController {
   constructor(
     private readonly releaseReadinessService: ReleaseReadinessService,
+    private readonly releaseReadinessWizardService: ReleaseReadinessWizardService,
   ) {}
+
+  @Get('wizard/defaults')
+  @RequirePermission('framework', 'read')
+  async getWizardDefaults(@OrganizationId() organizationId: string) {
+    return this.releaseReadinessWizardService.getDefaults(organizationId);
+  }
+
+  @Post('wizard/orchestrate')
+  @RequirePermission('framework', 'create')
+  async orchestrateWizard(
+    @OrganizationId() organizationId: string,
+    @Body() dto: OrchestrateHealthOSWizardDto,
+  ) {
+    return this.releaseReadinessWizardService.orchestrate(organizationId, dto);
+  }
 
   @Get('subjects')
   @RequirePermission('framework', 'read')

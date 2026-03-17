@@ -87,3 +87,50 @@ export type ReleaseGateEvaluation = {
   };
   evidenceHash: string;
 };
+
+export type HealthOSActiveConnection = {
+  id: string;
+  providerSlug: string;
+  providerName: string;
+  status: string;
+  variables: Record<string, unknown> | null;
+  metadata: Record<string, unknown> | null;
+  lastSyncAt: string | null;
+};
+
+export type HealthOSWizardDefaults = {
+  subjectDefaults: {
+    type: 'application' | 'api' | 'service' | 'integration' | 'environment';
+    name: string;
+    description?: string;
+    repositoryUrl?: string;
+    environment?: string;
+    serviceBaseUrl?: string;
+    fhirBaseUrl?: string;
+    partnerProfile?: string;
+  };
+  frameworkLibrary: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    description: string;
+    version: string;
+    visible: boolean;
+  }>;
+  activeConnections: HealthOSActiveConnection[];
+  definitionDefaults: {
+    name: string;
+    requiredFrameworkIds: string[];
+    requiredCheckIds: string[];
+    requiredApprovalKeys: string[];
+    requiredExternalValidationKeys: string[];
+    suggestedCheckBindings: Array<{
+      checkId: string;
+      connectionId: string;
+    }>;
+  };
+  readiness: {
+    missingProviderSlugs: string[];
+    frameworkLibraryReady: boolean;
+  };
+};
