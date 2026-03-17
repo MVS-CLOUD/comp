@@ -233,9 +233,13 @@ export class PoliciesController {
     ).map((f) => ({
       id: f.id,
       name: f.name,
+      slug: f.slug,
+      catalog: f.catalog,
       version: f.version,
       description: f.description,
       visible: f.visible,
+      sourceVersion: f.sourceVersion,
+      sourceBundleHash: f.sourceBundleHash,
       createdAt: f.createdAt,
       updatedAt: f.updatedAt,
     }));

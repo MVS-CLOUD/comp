@@ -28,6 +28,7 @@ import { getStringValue, toStringCredentials } from '../utils/credential-utils';
 
 interface RunChecksDto {
   checkId?: string;
+  variableOverrides?: Record<string, string | number | boolean | string[]>;
 }
 
 @Controller({ path: 'integrations/checks', version: '1' })
@@ -203,11 +204,13 @@ export class ChecksController {
     }
 
     // Get user-configured variables
-    const variables =
-      (connection.variables as Record<
+    const variables = {
+      ...(((connection.variables as Record<
         string,
         string | number | boolean | string[] | undefined
-      >) || {};
+      >) || {})),
+      ...(body.variableOverrides || {}),
+    };
 
     this.logger.log(
       `Running checks for connection ${connectionId} (${provider.slug})${body.checkId ? ` - check: ${body.checkId}` : ''}`,
@@ -254,6 +257,9 @@ export class ChecksController {
           resourceId: finding.resourceId,
           severity: finding.severity,
           remediation: finding.remediation,
+          standardReference:
+            finding.standardReference || checkResult.standardReference,
+          validatorName: finding.validatorName || checkResult.validatorName,
           evidence: JSON.parse(JSON.stringify(finding.evidence || {})),
         })),
         ...checkResult.result.passingResults.map((passing) => ({
@@ -265,6 +271,9 @@ export class ChecksController {
           resourceId: passing.resourceId,
           severity: 'info' as const,
           remediation: undefined,
+          standardReference:
+            passing.standardReference || checkResult.standardReference,
+          validatorName: passing.validatorName || checkResult.validatorName,
           evidence: JSON.parse(JSON.stringify(passing.evidence || {})),
         })),
       ]);

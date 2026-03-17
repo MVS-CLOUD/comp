@@ -29,6 +29,12 @@ enum ReleaseGateDecisionStatus {
   conditional
 }
 
+enum EvidenceReviewStatus {
+  pending_review
+  approved
+  rejected
+}
+
 enum ManualAttestationStatus {
   pending
   approved
@@ -90,8 +96,27 @@ model ReleaseDefinition {
   updatedAt           DateTime       @updatedAt
 
   releaseRuns ReleaseRun[]
+  checkBindings ReleaseDefinitionCheckBinding[]
 
   @@index([organizationId, releaseSubjectId])
+}
+
+model ReleaseDefinitionCheckBinding {
+  id                String              @id @default(dbgenerated("generate_prefixed_cuid('rls_cb'::text)"))
+  releaseDefinitionId String
+  releaseDefinition ReleaseDefinition   @relation(fields: [releaseDefinitionId], references: [id], onDelete: Cascade)
+  connectionId      String
+  connection        IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  checkId           String
+  variableOverrides Json?
+  freshnessHours    Int                 @default(24)
+  blocking          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([releaseDefinitionId])
+  @@index([connectionId])
+  @@unique([releaseDefinitionId, checkId])
 }
 
 model ReleaseRun {
@@ -197,6 +222,12 @@ model EvidenceArtifact {
   storageUrl      String?
   sha256          String?
   gateEligible    Boolean       @default(false)
+  reviewStatus    EvidenceReviewStatus @default(pending_review)
+  reviewedAt      DateTime?
+  reviewedById    String?
+  aiProvider      String?
+  aiModel         String?
+  promptVersion   String?
   collectedAt     DateTime      @default(now())
   expiresAt       DateTime?
   metadata        Json?

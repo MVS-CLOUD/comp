@@ -191,7 +191,16 @@ For each requirement, determine if the exercise documentation adequately address
       prompt: userPrompt,
     });
 
-    return NextResponse.json(object);
+    return NextResponse.json({
+      ...object,
+      advisoryOnly: true,
+      reviewStatus: 'pending_review',
+      provenance: {
+        aiProvider: 'openai',
+        aiModel: 'gpt-4o-mini',
+        promptVersion: 'evidence-form-analysis/v1',
+      },
+    });
   } catch (error) {
     console.error('[analyze-evidence-form] AI analysis failed:', error);
     return NextResponse.json(

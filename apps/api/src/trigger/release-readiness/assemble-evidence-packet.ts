@@ -27,6 +27,7 @@ export const assembleEvidencePacketTask = schemaTask({
         artifactType: 'release_evidence_packet',
         evidenceClass: 'manual_attested',
         gateEligible: false,
+        reviewStatus: 'approved',
         metadata: {
           assembledAt: new Date().toISOString(),
         },

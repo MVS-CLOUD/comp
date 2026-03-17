@@ -28,6 +28,7 @@ export const collectBrowserSupportingEvidenceTask = schemaTask({
         artifactType: 'browser_supporting_evidence',
         evidenceClass: 'browser_collected',
         gateEligible: false,
+        reviewStatus: 'pending_review',
         metadata: {
           automationIds,
           collectedAt: new Date().toISOString(),

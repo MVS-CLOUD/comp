@@ -7,6 +7,7 @@ type PrismaLike = Pick<
   | 'frameworkEditorFramework'
   | 'frameworkEditorRequirement'
   | 'frameworkEditorControlTemplate'
+  | 'frameworkEditorPolicyTemplate'
   | 'frameworkEditorTaskTemplate'
 >;
 
@@ -17,18 +18,31 @@ export async function seedHealthcareFrameworks(prisma: PrismaLike) {
     __dirname,
     './source',
   );
+  const supplementalDirectory = path.resolve(
+    __dirname,
+    '../../../../../../additional-info/healthos_onc_hardened_final_package_2026-03-15',
+  );
 
-  const seed = await buildHealthcareFrameworkSeed({ packageDirectory });
+  const seed = await buildHealthcareFrameworkSeed({
+    packageDirectory,
+    supplementalDirectory,
+  });
 
   await upsertMany(prisma.frameworkEditorFramework, seed.frameworks);
   await upsertMany(prisma.frameworkEditorRequirement, seed.requirements);
   await upsertMany(prisma.frameworkEditorControlTemplate, seed.controlTemplates);
+  await upsertMany(prisma.frameworkEditorPolicyTemplate, seed.policyTemplates);
   await upsertMany(prisma.frameworkEditorTaskTemplate, seed.taskTemplates);
 
   await connectRelations(
     prisma.frameworkEditorControlTemplate,
     'requirements',
     seed.controlRequirementRelations,
+  );
+  await connectRelations(
+    prisma.frameworkEditorControlTemplate,
+    'policyTemplates',
+    seed.controlPolicyRelations,
   );
   await connectRelations(
     prisma.frameworkEditorControlTemplate,
@@ -65,7 +79,7 @@ async function connectRelations(
       data: Record<string, unknown>;
     }) => Promise<unknown>;
   },
-  relationField: 'requirements' | 'taskTemplates',
+  relationField: 'requirements' | 'policyTemplates' | 'taskTemplates',
   relations: SeedRelation[],
 ) {
   for (const relation of relations) {

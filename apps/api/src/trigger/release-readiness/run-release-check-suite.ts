@@ -15,7 +15,16 @@ export const runReleaseCheckSuiteTask = schemaTask({
       where: { id: releaseRunId },
       include: {
         releaseDefinition: {
-          select: { requiredCheckIds: true },
+          select: {
+            requiredCheckIds: true,
+            checkBindings: {
+              select: {
+                checkId: true,
+                connectionId: true,
+                variableOverrides: true,
+              },
+            },
+          },
         },
       },
     });
@@ -50,23 +59,41 @@ export const runReleaseCheckSuiteTask = schemaTask({
 
     const apiUrl = process.env.BASE_URL || 'http://localhost:3333';
     const executedCheckRuns: string[] = [];
+    const checkBindings = new Map(
+      releaseRun.releaseDefinition.checkBindings.map((binding) => [
+        binding.checkId,
+        {
+          connectionId: binding.connectionId,
+          variableOverrides: binding.variableOverrides,
+        },
+      ]),
+    );
 
     for (const checkId of targetCheckIds) {
+      const binding = checkBindings.get(checkId);
+      const boundConnectionId = binding?.connectionId;
       const manifestId = checkManifestMap.get(checkId);
-      if (!manifestId) {
-        continue;
-      }
-
-      const connection = await db.integrationConnection.findFirst({
-        where: {
-          organizationId,
-          status: 'active',
-          provider: {
-            slug: manifestId,
-          },
-        },
-        select: { id: true },
-      });
+      const connection = boundConnectionId
+        ? await db.integrationConnection.findFirst({
+            where: {
+              id: boundConnectionId,
+              organizationId,
+              status: 'active',
+            },
+            select: { id: true },
+          })
+        : manifestId
+          ? await db.integrationConnection.findFirst({
+              where: {
+                organizationId,
+                status: 'active',
+                provider: {
+                  slug: manifestId,
+                },
+              },
+              select: { id: true },
+            })
+          : null;
 
       if (!connection) {
         logger.warn('No active connection found for release check', {
@@ -74,6 +101,7 @@ export const runReleaseCheckSuiteTask = schemaTask({
           releaseRunId,
           checkId,
           manifestId,
+          boundConnectionId,
         });
         continue;
       }
@@ -87,6 +115,9 @@ export const runReleaseCheckSuiteTask = schemaTask({
             'x-service-token': process.env.SERVICE_TOKEN_TRIGGER || '',
             'x-organization-id': organizationId,
           },
+          body: JSON.stringify({
+            variableOverrides: binding?.variableOverrides ?? undefined,
+          }),
         },
       );
 
@@ -117,6 +148,7 @@ export const runReleaseCheckSuiteTask = schemaTask({
         artifactType: 'check_suite_request',
         evidenceClass: 'deterministic',
         gateEligible: false,
+        reviewStatus: 'approved',
         metadata: {
           checkIds: targetCheckIds,
           executedCheckRuns,

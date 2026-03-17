@@ -16,6 +16,8 @@ export const repositoryBranchProtectionCheck: IntegrationCheck = {
   name: 'Repository branch protection',
   description:
     'Verify the repository branch protection baseline through a deterministic verification endpoint.',
+  standardReference: 'Internal release baseline; repository protection',
+  validatorName: 'HealthOS Repository Harness',
   taskMapping: TASK_TEMPLATES.codeChanges,
   defaultSeverity: 'high',
   variables: [

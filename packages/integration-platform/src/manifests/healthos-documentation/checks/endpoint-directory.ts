@@ -9,6 +9,8 @@ export const endpointDirectoryCheck: IntegrationCheck = {
   name: 'Service base URL directory published',
   description:
     'Verify the published endpoint directory is reachable and returns structured content.',
+  standardReference: '§170.404; Service base URL publication',
+  validatorName: 'HealthOS Documentation Harness',
   taskMapping: TASK_TEMPLATES.smartFhirRuntimeChecks,
   defaultSeverity: 'critical',
   variables: [endpointDirectoryUrlVariable],

@@ -17,6 +17,8 @@ export interface CheckRunResult {
   checkName: string;
   status: 'success' | 'failed' | 'error';
   result: CheckResult;
+  standardReference?: string;
+  validatorName?: string;
   error?: string;
   durationMs: number;
 }
@@ -52,6 +54,8 @@ export async function runCheck(
       checkName: check.name,
       status,
       result,
+      standardReference: check.standardReference,
+      validatorName: check.validatorName,
       durationMs: Date.now() - startTime,
     };
   } catch (err) {
@@ -63,6 +67,8 @@ export async function runCheck(
       checkName: check.name,
       status: 'error',
       result,
+      standardReference: check.standardReference,
+      validatorName: check.validatorName,
       error: err instanceof Error ? err.message : String(err),
       durationMs: Date.now() - startTime,
     };
@@ -117,11 +123,13 @@ export async function runAllChecks(options: RunCheckOptions): Promise<RunAllChec
  */
 export function getAvailableChecks(
   manifest: IntegrationManifest,
-): Array<{ id: string; name: string; description: string; taskMapping?: string }> {
+): Array<{ id: string; name: string; description: string; taskMapping?: string; standardReference?: string; validatorName?: string }> {
   return (manifest.checks || []).map((check) => ({
     id: check.id,
     name: check.name,
     description: check.description,
     taskMapping: check.taskMapping,
+    standardReference: check.standardReference,
+    validatorName: check.validatorName,
   }));
 }

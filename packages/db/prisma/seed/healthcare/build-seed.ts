@@ -1,13 +1,31 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { parseCsv, splitRelationValues, type CsvRow } from './csv';
+import { DATE_STRING, FRAMEWORKS, MANUAL_REQUIREMENTS } from './catalog';
+import {
+  buildControlMetadata,
+  buildPolicyContent,
+  buildPolicyMetadata,
+  buildRequirementMetadata,
+  buildSourceBundleHash,
+  buildTaskMetadata,
+  isNormativeEvidenceType,
+} from './provenance';
+import {
+  buildManualRequirements,
+  buildObligationTaskTemplate,
+} from './template-builders';
 
 type SeedFramework = {
   id: string;
   name: string;
+  slug: string;
+  catalog: string;
   description: string;
   version: string;
   visible: boolean;
+  sourceVersion: string;
+  sourceBundleHash: string;
 };
 
 type SeedRequirement = {
@@ -16,9 +34,24 @@ type SeedRequirement = {
   name: string;
   identifier: string;
   description: string;
+  sourceMetadata?: Record<string, unknown>;
 };
 
-type SeedControlTemplate = { id: string; name: string; description: string };
+type SeedControlTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  sourceMetadata?: Record<string, unknown>;
+};
+type SeedPolicyTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  frequency: 'yearly';
+  department: 'gov' | 'it' | 'itsm' | 'admin' | 'qms' | 'hr';
+  content: Array<Record<string, unknown>>;
+  sourceMetadata?: Record<string, unknown>;
+};
 type SeedTaskTemplate = {
   id: string;
   name: string;
@@ -32,56 +65,33 @@ type SeedTaskTemplate = {
     | 'yearly';
   department: 'admin' | 'gov' | 'hr' | 'it' | 'itsm' | 'qms';
   automationStatus: 'AUTOMATED' | 'MANUAL';
+  sourceMetadata?: Record<string, unknown>;
 };
 
-type BuildSeedOptions = { packageDirectory: string };
+type BuildSeedOptions = { packageDirectory: string; supplementalDirectory?: string };
 
-const FRAMEWORKS: SeedFramework[] = [
-  { id: 'frk_hc_onc_2026_core', name: 'ONC 2026 Core', description: 'Active ONC certification criteria library', version: '2026-03-15', visible: true },
-  { id: 'frk_hc_onc_conditions', name: 'ONC Conditions & Maintenance', description: 'Ongoing ONC obligations and filings', version: '2026-03-15', visible: true },
-  { id: 'frk_hc_hipaa_security', name: 'HIPAA Security Rule', description: 'HIPAA technical and operational readiness overlays', version: '2026-03-15', visible: true },
-  { id: 'frk_hc_smart_runtime', name: 'SMART on FHIR Runtime', description: 'SMART and FHIR runtime validation requirements', version: '2026-03-15', visible: true },
-  { id: 'frk_hc_dosespot', name: 'DoseSpot Readiness', description: 'Internal partner-readiness scaffolding for DoseSpot workflows', version: '2026-03-15', visible: true },
-  { id: 'frk_hc_internal_release', name: 'Internal Release Readiness', description: 'Deterministic release and evidence gate requirements', version: '2026-03-15', visible: true },
-];
-
-const DATE_STRING = '2026-03-15T00:00:00.000Z';
-
-const MANUAL_REQUIREMENTS = {
-  hipaa: [
-    ['Security Risk Analysis', 'Maintain a current HIPAA Security Risk Analysis, remediation register, and owner assignment.'],
-    ['Audit Controls and Activity Review', 'Verify systems handling regulated data generate, retain, and review audit evidence.'],
-    ['Access Control and Authentication', 'Verify unique identities, least privilege, MFA posture, and emergency access procedures.'],
-    ['Transmission Security', 'Verify secure transport, integrity controls, and documented exceptions.'],
-    ['Breach Notification Preparedness', 'Maintain breach response readiness, timelines, and supporting procedures.'],
-  ],
-  smart: [
-    ['SMART discovery metadata', 'Verify `.well-known/smart-configuration` is published and internally consistent.'],
-    ['SMART authorization metadata', 'Verify authorization, token, revocation, and supported capability metadata.'],
-    ['FHIR capability statement coverage', 'Verify CapabilityStatement presence and expected resource/profile coverage.'],
-    ['Granular SMART scopes', 'Verify SMART scopes and sub-resource scope behavior are supported and documented.'],
-    ['Public developer documentation', 'Verify public FHIR/SMART documentation and endpoint references are available.'],
-  ],
-  dosespot: [
-    ['Webhook event coverage', 'Track required DoseSpot push notification and event-handler coverage.'],
-    ['Idempotent event processing', 'Verify duplicate-safe handling and replay-safe processing for partner events.'],
-    ['FHIR and status mapping verification', 'Verify response mapping, status transitions, and certification scenarios.'],
-    ['Certification artifact packaging', 'Assemble partner-facing evidence and test artifacts for review.'],
-  ],
-  release: [
-    ['Code security baseline', 'Required code security checks, vulnerability posture, and repository protections pass.'],
-    ['Runtime and API readiness', 'Required runtime checks for APIs, auth, and external behavior pass.'],
-    ['Infrastructure and cloud posture', 'Critical infrastructure checks and logging/retention expectations pass.'],
-    ['Evidence packet completeness', 'Required artifacts exist, are fresh, and are exportable.'],
-    ['Human-required approvals', 'Required manual approvals are present and unexpired.'],
-    ['Partner readiness blockers', 'Partner-specific blockers are resolved or explicitly waived.'],
-  ],
-} as const;
-
-export async function buildHealthcareFrameworkSeed({ packageDirectory }: BuildSeedOptions) {
-  const requirements = parseCsv(await readFile(packageDirectory, 'notion_db_requirements.csv'));
-  const controls = parseCsv(await readFile(packageDirectory, 'notion_db_controls.csv'));
-  const obligations = parseCsv(await readFile(packageDirectory, 'notion_db_obligations.csv'));
+export async function buildHealthcareFrameworkSeed({ packageDirectory, supplementalDirectory }: BuildSeedOptions) {
+  const supplementalPath = supplementalDirectory ?? packageDirectory;
+  const requirementSource = await readFile(packageDirectory, 'notion_db_requirements.csv');
+  const controlSource = await readFile(packageDirectory, 'notion_db_controls.csv');
+  const obligationSource = await readFile(packageDirectory, 'notion_db_obligations.csv');
+  const evidenceSource = await readFile(supplementalPath, 'notion_db_evidence.csv');
+  const testSource = await readFile(supplementalPath, 'notion_db_tests.csv');
+  const decisionSource = await readFile(supplementalPath, 'notion_db_decisions.csv');
+  const sourceBundleHash = buildSourceBundleHash([
+    requirementSource,
+    controlSource,
+    obligationSource,
+    evidenceSource,
+    testSource,
+    decisionSource,
+  ]);
+  const requirements = parseCsv(requirementSource);
+  const controls = parseCsv(controlSource);
+  const obligations = parseCsv(obligationSource);
+  const evidence = parseCsv(evidenceSource);
+  const tests = parseCsv(testSource);
+  const decisions = parseCsv(decisionSource);
 
   const oncRequirements = requirements.map((row) => ({
     id: requirementId(row['Req_ID']),
@@ -89,6 +99,11 @@ export async function buildHealthcareFrameworkSeed({ packageDirectory }: BuildSe
     name: row['Criterion_Name'],
     identifier: row['Req_ID'],
     description: `${row['Citation']} — ${row['Conformance_Method']}. ${row['Notes']}`.trim(),
+    sourceMetadata: buildRequirementMetadata(
+      row,
+      tests.filter((test) => splitRelationValues(test['Requirement_IDs']).includes(row['Req_ID'])),
+      decisions.filter((decision) => splitRelationValues(decision['Related_Requirements']).includes(row['Req_ID'])),
+    ),
   }));
 
   const oncConditionRequirements = obligations
@@ -99,6 +114,7 @@ export async function buildHealthcareFrameworkSeed({ packageDirectory }: BuildSe
       name: row['Obligation_Name'],
       identifier: row['Obligation_ID'],
       description: `${row['Regulation']} — ${row['Description']}`.trim(),
+      sourceMetadata: buildTaskMetadata(row),
     }));
 
   const manualRequirements = [
@@ -112,10 +128,29 @@ export async function buildHealthcareFrameworkSeed({ packageDirectory }: BuildSe
     id: controlTemplateId(row['Control_ID']),
     name: row['Control_Name'],
     description: row['Description'] || row['Category'],
+    sourceMetadata: buildControlMetadata(
+      row,
+      evidence.filter((item) => splitRelationValues(item['Control_IDs']).includes(row['Control_ID'])),
+      tests.filter((item) => splitRelationValues(item['Evidence_IDs']).some((id) => splitRelationValues(row['Evidence_IDs']).includes(id))),
+      decisions.filter((item) => splitRelationValues(item['Related_Controls']).includes(row['Control_ID'])),
+    ),
   }));
 
   const manualControlTemplates = buildManualControlTemplates();
-  const taskTemplates = obligations.map(buildObligationTaskTemplate);
+  const policyTemplates = evidence
+    .filter((row) => isNormativeEvidenceType(row['Evidence_Type']))
+    .map((row) => ({
+      id: policyTemplateId(row['Evidence_ID']),
+      name: row['Evidence_Name'],
+      description: row['Description'] || row['Evidence_Name'],
+      frequency: 'yearly' as const,
+      department: mapDepartment(row['Owner']),
+      content: buildPolicyContent(row),
+      sourceMetadata: buildPolicyMetadata(row),
+    }));
+  const taskTemplates = obligations.map((row) =>
+    buildObligationTaskTemplate(row, mapFrequency, mapDepartment, isManualCategory),
+  );
   const manualTaskTemplates = buildManualTaskTemplates();
 
   const requirementIdByCode = new Map(
@@ -154,36 +189,24 @@ export async function buildHealthcareFrameworkSeed({ packageDirectory }: BuildSe
     ),
     ...buildManualControlTaskRelations(),
   ];
+  const controlPolicyRelations = policyTemplates.flatMap((row) =>
+    splitRelationValues(
+      String(row.sourceMetadata?.relatedControlIds?.join(';') ?? ''),
+    ).map((controlId) => ({ A: controlTemplateId(controlId), B: row.id })),
+  );
 
   return {
-    frameworks: FRAMEWORKS.map(withDates),
+    frameworks: FRAMEWORKS.map((framework) =>
+      withDates({ ...framework, sourceBundleHash }),
+    ),
     requirements: [...oncRequirements, ...oncConditionRequirements, ...manualRequirements].map(withDates),
     controlTemplates: [...controlTemplates, ...manualControlTemplates].map(withDates),
+    policyTemplates: policyTemplates.map(withDates),
     taskTemplates: [...taskTemplates, ...manualTaskTemplates].map(withDates),
     controlRequirementRelations,
+    controlPolicyRelations,
     controlTaskRelations,
   };
-}
-
-function buildObligationTaskTemplate(row: CsvRow): SeedTaskTemplate {
-  return {
-    id: taskTemplateId(row['Obligation_ID']),
-    name: row['Obligation_Name'],
-    description: row['Description'],
-    frequency: mapFrequency(row['Frequency']),
-    department: mapDepartment(row['Owner']),
-    automationStatus: isManualCategory(row['Category']) ? 'MANUAL' : 'AUTOMATED',
-  };
-}
-
-function buildManualRequirements(frameworkId: string, prefix: string, items: readonly (readonly [string, string])[]) {
-  return items.map(([name, description], index) => ({
-    id: requirementId(`${prefix}-${index + 1}`),
-    frameworkId,
-    name,
-    identifier: `${prefix}-${index + 1}`,
-    description,
-  }));
 }
 
 function buildManualControlTemplates(): SeedControlTemplate[] {
@@ -191,7 +214,12 @@ function buildManualControlTemplates(): SeedControlTemplate[] {
     ['CTRL-SMART-001', 'SMART/FHIR Conformance', 'Deterministic runtime validation for SMART discovery, auth, and FHIR conformance.'],
     ['CTRL-DOSESPOT-001', 'DoseSpot Certification Readiness', 'Partner scenario coverage, idempotency, and integration proof management.'],
     ['CTRL-REL-001', 'Release Gate Evidence', 'Deterministic release gate evidence and blocker handling.'],
-  ].map(([id, name, description]) => ({ id: controlTemplateId(id), name, description }));
+  ].map(([id, name, description]) => ({
+    id: controlTemplateId(id),
+    name,
+    description,
+    sourceMetadata: { sourceType: 'manual_overlay', controlCode: id },
+  }));
 }
 
 function buildManualTaskTemplates(): SeedTaskTemplate[] {
@@ -225,7 +253,7 @@ function manualLinks(controlCode: string, requirementCodes: string[]) {
 }
 
 function task(code: string, name: string, description: string, department: SeedTaskTemplate['department'], automationStatus: SeedTaskTemplate['automationStatus']): SeedTaskTemplate {
-  return { id: taskTemplateId(code), name, description, frequency: 'yearly', department, automationStatus };
+  return { id: taskTemplateId(code), name, description, frequency: 'yearly', department, automationStatus, sourceMetadata: { sourceType: 'manual_overlay', taskCode: code } };
 }
 
 function withDates<T extends Record<string, unknown>>(value: T): T & { createdAt: string; updatedAt: string } {
@@ -234,6 +262,7 @@ function withDates<T extends Record<string, unknown>>(value: T): T & { createdAt
 
 function requirementId(code: string) { return `frk_rq_hc_${slug(code)}`; }
 function controlTemplateId(code: string) { return `frk_ct_hc_${slug(code)}`; }
+function policyTemplateId(code: string) { return `frk_pt_hc_${slug(code)}`; }
 function taskTemplateId(code: string) { return `frk_tt_hc_${slug(code)}`; }
 function slug(value: string) { return value.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, ''); }
 

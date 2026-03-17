@@ -24,9 +24,13 @@ export const updatePolicy = schemaTask({
       z.object({
         id: z.string(),
         name: z.string(),
+        slug: z.string(),
+        catalog: z.string(),
         version: z.string(),
         description: z.string(),
         visible: z.boolean(),
+        sourceVersion: z.string().nullable(),
+        sourceBundleHash: z.string().nullable(),
         createdAt: z.date(),
         updatedAt: z.date(),
       }),

@@ -15,6 +15,8 @@ export const ciRequiredWorkflowsCheck: IntegrationCheck = {
   name: 'Required CI workflows complete',
   description:
     'Verify the required CI workflows completed successfully for the targeted release.',
+  standardReference: 'Internal release baseline; CI workflow completion',
+  validatorName: 'HealthOS CI Harness',
   defaultSeverity: 'critical',
   variables: [ciVerificationBaseUrlVariable, releaseIdentifierVariable],
   run: async (ctx) => {

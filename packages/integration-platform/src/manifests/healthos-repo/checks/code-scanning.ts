@@ -16,6 +16,8 @@ export const repositoryCodeScanningCheck: IntegrationCheck = {
   name: 'Repository code scanning active',
   description:
     'Verify the repository security scanning baseline through a deterministic verification endpoint.',
+  standardReference: 'Internal release baseline; code scanning',
+  validatorName: 'HealthOS Repository Harness',
   taskMapping: TASK_TEMPLATES.secureCode,
   defaultSeverity: 'high',
   variables: [

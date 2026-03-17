@@ -9,6 +9,8 @@ export const partnerWebhookReplayCheck: IntegrationCheck = {
   name: 'Partner webhook replay harness',
   description:
     'Verify the partner webhook replay harness is healthy and ready to validate partner scenarios.',
+  standardReference: 'Partner readiness; webhook replay validation',
+  validatorName: 'HealthOS Partner Harness',
   taskMapping: TASK_TEMPLATES.doseSpotScenarioVerification,
   defaultSeverity: 'high',
   variables: [verificationBaseUrlVariable],

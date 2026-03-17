@@ -28,6 +28,8 @@ export interface CreateCheckResultDto {
   description?: string;
   severity?: 'info' | 'low' | 'medium' | 'high' | 'critical';
   remediation?: string;
+  standardReference?: string;
+  validatorName?: string;
   evidence?: Prisma.InputJsonValue;
 }
 
@@ -82,6 +84,8 @@ export class CheckRunRepository {
         description: data.description,
         severity: data.severity,
         remediation: data.remediation,
+        standardReference: data.standardReference,
+        validatorName: data.validatorName,
         evidence: data.evidence,
       },
     });
@@ -101,6 +105,8 @@ export class CheckRunRepository {
         description: r.description,
         severity: r.severity,
         remediation: r.remediation,
+        standardReference: r.standardReference,
+        validatorName: r.validatorName,
         evidence: r.evidence,
       })),
     });

@@ -1,9 +1,37 @@
 import {
   ArrayUnique,
+  IsBoolean,
   IsArray,
+  IsInt,
+  IsObject,
   IsOptional,
   IsString,
+  Min,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+class ReleaseDefinitionCheckBindingDto {
+  @IsString()
+  checkId!: string;
+
+  @IsString()
+  connectionId!: string;
+
+  @IsOptional()
+  @IsObject()
+  variableOverrides?: Record<string, unknown>;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  freshnessHours?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  blocking?: boolean;
+}
 
 export class CreateReleaseDefinitionDto {
   @IsString()
@@ -39,4 +67,10 @@ export class CreateReleaseDefinitionDto {
   @ArrayUnique()
   @IsString({ each: true })
   requiredExternalValidationKeys?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ReleaseDefinitionCheckBindingDto)
+  checkBindings?: ReleaseDefinitionCheckBindingDto[];
 }

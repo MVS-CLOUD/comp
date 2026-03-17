@@ -72,6 +72,7 @@ model IntegrationConnection {
     runs               IntegrationRun[]
     findings           IntegrationPlatformFinding[]
     checkRuns          IntegrationCheckRun[]
+    releaseDefinitionCheckBindings ReleaseDefinitionCheckBinding[]
 
     @@index([organizationId])
     @@index([providerId])

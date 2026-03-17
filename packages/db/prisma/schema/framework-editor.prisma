@@ -14,9 +14,13 @@ model FrameworkEditorVideo {
 model FrameworkEditorFramework {
   id          String  @id @default(dbgenerated("generate_prefixed_cuid('frk'::text)"))
   name        String // e.g., "soc2", "iso27001"
+  slug        String  @unique
+  catalog     String  @default("default")
   version     String
   description String
   visible     Boolean @default(false)
+  sourceVersion    String?
+  sourceBundleHash String?
 
   requirements       FrameworkEditorRequirement[]
   frameworkInstances FrameworkInstance[]
@@ -36,6 +40,7 @@ model FrameworkEditorRequirement {
   name        String // Original requirement ID within that framework, e.g., "Privacy"
   identifier  String @default("") // Unique identifier for the requirement, e.g., "cc1-1"
   description String
+  sourceMetadata Json?
 
   controlTemplates FrameworkEditorControlTemplate[]
   requirementMaps  RequirementMap[]
@@ -53,6 +58,7 @@ model FrameworkEditorPolicyTemplate {
   frequency   Frequency // Using the enum from shared.prisma
   department  Departments // Using the enum from shared.prisma
   content     Json
+  sourceMetadata Json?
 
   controlTemplates FrameworkEditorControlTemplate[]
 
@@ -71,6 +77,7 @@ model FrameworkEditorTaskTemplate {
   frequency        Frequency            // Using the enum from shared.prisma
   department       Departments          // Using the enum from shared.prisma
   automationStatus TaskAutomationStatus @default(AUTOMATED)
+  sourceMetadata Json?
 
   controlTemplates FrameworkEditorControlTemplate[]
 
@@ -86,6 +93,7 @@ model FrameworkEditorControlTemplate {
   id          String @id @default(dbgenerated("generate_prefixed_cuid('frk_ct'::text)"))
   name        String
   description String
+  sourceMetadata Json?
 
   policyTemplates FrameworkEditorPolicyTemplate[]
   requirements    FrameworkEditorRequirement[]

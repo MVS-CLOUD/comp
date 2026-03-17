@@ -2,15 +2,22 @@ import { NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { ReleaseReadinessService } from './release-readiness.service';
 import { ReleaseReadinessRepository } from './release-readiness.repository';
+import { BadRequestException } from '@nestjs/common';
+
+jest.mock('@trycompai/db', () => ({
+  db: {},
+}), { virtual: true });
 
 describe('ReleaseReadinessService', () => {
   const repository = {
     findSubjects: jest.fn(),
     createSubject: jest.fn(),
     findSubjectById: jest.fn(),
+    findConnectionsByIds: jest.fn(),
     findDefinitions: jest.fn(),
     createDefinition: jest.fn(),
     findDefinitionById: jest.fn(),
+    replaceDefinitionCheckBindings: jest.fn(),
     findRuns: jest.fn(),
     createRun: jest.fn(),
     findRunById: jest.fn(),
@@ -25,6 +32,7 @@ describe('ReleaseReadinessService', () => {
     createExternalValidation: jest.fn(),
     updateExternalValidation: jest.fn(),
     upsertGateDecision: jest.fn(),
+    findMemberById: jest.fn(),
   };
 
   let service: ReleaseReadinessService;
@@ -76,6 +84,85 @@ describe('ReleaseReadinessService', () => {
         name: 'Production API Gate',
       }),
     ).rejects.toThrow(NotFoundException);
+  });
+
+  it('creates a definition and persists explicit check bindings', async () => {
+    repository.findSubjectById.mockResolvedValue({ id: 'subj_1' });
+    repository.findConnectionsByIds.mockResolvedValue([
+      { id: 'conn_1', organizationId: 'org_1' },
+    ]);
+    repository.createDefinition.mockResolvedValue({ id: 'def_1' });
+    repository.findDefinitionById.mockResolvedValue({
+      id: 'def_1',
+      name: 'prod gate',
+      checkBindings: [
+        {
+          checkId: 'smart_configuration',
+          connectionId: 'conn_1',
+          freshnessHours: 12,
+          blocking: true,
+        },
+      ],
+    });
+
+    const result = await service.createDefinition('org_1', {
+      releaseSubjectId: 'subj_1',
+      name: 'prod gate',
+      requiredFrameworkIds: ['frk_hc_smart_runtime'],
+      requiredCheckIds: ['smart_configuration'],
+      requiredApprovalKeys: ['security_signoff'],
+      requiredExternalValidationKeys: ['partner_validation_packet'],
+      checkBindings: [
+        {
+          checkId: 'smart_configuration',
+          connectionId: 'conn_1',
+          freshnessHours: 12,
+          blocking: true,
+        },
+      ],
+    });
+
+    expect(repository.replaceDefinitionCheckBindings).toHaveBeenCalledWith('def_1', [
+      {
+        releaseDefinitionId: 'def_1',
+        checkId: 'smart_configuration',
+        connectionId: 'conn_1',
+        variableOverrides: null,
+        freshnessHours: 12,
+        blocking: true,
+      },
+    ]);
+    expect(repository.findDefinitionById).toHaveBeenCalledWith('def_1', 'org_1');
+    expect(result).toEqual({
+      id: 'def_1',
+      name: 'prod gate',
+      checkBindings: [
+        {
+          checkId: 'smart_configuration',
+          connectionId: 'conn_1',
+          freshnessHours: 12,
+          blocking: true,
+        },
+      ],
+    });
+  });
+
+  it('rejects definitions that reference invalid connections', async () => {
+    repository.findSubjectById.mockResolvedValue({ id: 'subj_1' });
+    repository.findConnectionsByIds.mockResolvedValue([]);
+
+    await expect(
+      service.createDefinition('org_1', {
+        releaseSubjectId: 'subj_1',
+        name: 'prod gate',
+        checkBindings: [
+          {
+            checkId: 'smart_configuration',
+            connectionId: 'missing_conn',
+          },
+        ],
+      }),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('throws when creating a run from a missing definition', async () => {

@@ -612,6 +612,10 @@ export interface CheckPassingResult {
   resourceId: string;
   /** Evidence proving this passed - REQUIRED for audit trail */
   evidence: Record<string, unknown>;
+  /** Optional standards traceability for compliance evidence */
+  standardReference?: string;
+  /** Optional validator or harness name that produced this result */
+  validatorName?: string;
 }
 
 /**
@@ -632,6 +636,10 @@ export interface CheckFindingResult {
   remediation: string;
   /** Additional evidence/context */
   evidence?: Record<string, unknown>;
+  /** Optional standards traceability for compliance evidence */
+  standardReference?: string;
+  /** Optional validator or harness name that produced this result */
+  validatorName?: string;
 }
 
 // ============================================================================
@@ -662,6 +670,12 @@ export interface IntegrationCheck {
 
   /** Default severity for findings from this check */
   defaultSeverity?: FindingSeverity;
+
+  /** Optional standards or regulatory reference for the check */
+  standardReference?: string;
+
+  /** Optional validator or harness name */
+  validatorName?: string;
 
   /**
    * Variables that users configure when setting up this integration.
