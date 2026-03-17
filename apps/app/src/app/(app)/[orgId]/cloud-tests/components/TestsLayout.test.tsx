@@ -16,11 +16,11 @@ vi.mock('@/hooks/use-permissions', () => ({
 }));
 
 // Mock useApi hook
-const mockUseSWR = vi.fn(() => ({
+const mockUseSWR = vi.fn().mockReturnValue({
   data: { data: { data: [], count: 0 } },
   mutate: vi.fn(),
   isValidating: false,
-}));
+});
 vi.mock('@/hooks/use-api', () => ({
   useApi: () => ({
     useSWR: mockUseSWR,
@@ -127,13 +127,16 @@ const mockProvider = {
   name: 'AWS',
   displayName: 'AWS Production',
   status: 'active',
-  lastRunAt: '2024-01-01',
+  lastRunAt: new Date('2024-01-01'),
   isLegacy: false,
   supportsMultipleConnections: false,
   requiredVariables: [],
   variables: {},
   accountId: '123456789012',
   regions: ['us-east-1'],
+  organizationId: 'org_123',
+  createdAt: new Date('2024-01-01'),
+  updatedAt: new Date('2024-01-01'),
 };
 
 const defaultProps = {

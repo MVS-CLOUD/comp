@@ -117,28 +117,38 @@ const MockIcon = ({ className: _c }: { className?: string }) => (
   <span data-testid="status-icon" />
 );
 
+const baseMockTask = {
+  status: 'todo' as const,
+  assigneeId: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  organizationId: 'org_1',
+  order: 0,
+  department: null,
+  frequency: null,
+  reviewDate: null,
+  automationStatus: 'MANUAL' as const,
+  lastCompletedAt: null,
+  taskTemplateId: null,
+  approverId: null,
+  approvedAt: null,
+  previousStatus: null,
+  releaseRunId: null,
+  controls: [],
+};
+
 const mockTasks = [
   {
+    ...baseMockTask,
     id: 'task-1',
     title: 'Test Task 1',
     description: 'A test task',
-    status: 'todo',
-    assigneeId: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    organizationId: 'org_1',
-    controls: [],
   },
   {
+    ...baseMockTask,
     id: 'task-2',
     title: 'Test Task 2',
     description: 'Another test task',
-    status: 'todo',
-    assigneeId: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    organizationId: 'org_1',
-    controls: [],
   },
 ];
 

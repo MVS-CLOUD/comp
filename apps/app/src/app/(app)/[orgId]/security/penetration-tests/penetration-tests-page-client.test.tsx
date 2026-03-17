@@ -188,12 +188,25 @@ describe('PenetrationTestsPageClient', () => {
     });
     vi.mocked(integrationPlatform.useIntegrationMutations).mockReturnValue({
       startOAuth: startOAuthMock,
+      createConnection: vi.fn(),
+      testConnection: vi.fn(),
+      pauseConnection: vi.fn(),
+      resumeConnection: vi.fn(),
+      disconnectConnection: vi.fn(),
+      deleteConnection: vi.fn(),
+      updateConnectionCredentials: vi.fn(),
+      updateConnectionMetadata: vi.fn(),
+      getConnectionDetails: vi.fn(),
+      getConnectionVariables: vi.fn(),
+      saveConnectionVariables: vi.fn(),
+      getVariableOptions: vi.fn(),
     } as ReturnType<typeof integrationPlatform.useIntegrationMutations>);
 
     vi.mocked(pentestHooks.useGithubRepos).mockReturnValue({
       repos: [],
+      connected: false,
       isLoading: false,
-    } as ReturnType<typeof pentestHooks.useGithubRepos>);
+    });
   });
 
   it('renders an empty state and call-to-action when no reports exist', () => {

@@ -5,9 +5,9 @@ import { formatReportDate, isReportInProgress, sortReportsByUpdatedAtDesc, statu
 describe('penetration test lib helpers', () => {
   it('sortReportsByUpdatedAtDesc orders newest first', () => {
     const sorted = sortReportsByUpdatedAtDesc([
-      { updatedAt: '2023-01-01T00:00:00Z', id: 'old', targetUrl: '', repoUrl: '', status: 'completed', createdAt: '', error: null, temporalUiUrl: null, webhookUrl: null, userId: '', organizationId: '', sandboxId: '', workflowId: '', sessionId: '' },
-      { updatedAt: '2024-01-02T00:00:00Z', id: 'new', targetUrl: '', repoUrl: '', status: 'completed', createdAt: '', error: null, temporalUiUrl: null, webhookUrl: null, userId: '', organizationId: '', sandboxId: '', workflowId: '', sessionId: '' },
-      { updatedAt: 'invalid-date', id: 'bad', targetUrl: '', repoUrl: '', status: 'completed', createdAt: '', error: null, temporalUiUrl: null, webhookUrl: null, userId: '', organizationId: '', sandboxId: '', workflowId: '', sessionId: '' },
+      { updatedAt: '2023-01-01T00:00:00Z', id: 'old', targetUrl: '', repoUrl: '', status: 'completed', createdAt: '', error: null, temporalUiUrl: null, webhookUrl: null },
+      { updatedAt: '2024-01-02T00:00:00Z', id: 'new', targetUrl: '', repoUrl: '', status: 'completed', createdAt: '', error: null, temporalUiUrl: null, webhookUrl: null },
+      { updatedAt: 'invalid-date', id: 'bad', targetUrl: '', repoUrl: '', status: 'completed', createdAt: '', error: null, temporalUiUrl: null, webhookUrl: null },
     ]);
 
     expect(sorted.map((report) => report.id)).toEqual(['new', 'old', 'bad']);
@@ -49,11 +49,6 @@ describe('penetration test lib helpers', () => {
         error: null,
         temporalUiUrl: null,
         webhookUrl: null,
-        userId: '',
-        organizationId: '',
-        sandboxId: '',
-        workflowId: '',
-        sessionId: '',
       },
       {
         updatedAt: 'also-invalid',
@@ -65,11 +60,6 @@ describe('penetration test lib helpers', () => {
         error: null,
         temporalUiUrl: null,
         webhookUrl: null,
-        userId: '',
-        organizationId: '',
-        sandboxId: '',
-        workflowId: '',
-        sessionId: '',
       },
     ]);
 
@@ -88,11 +78,6 @@ describe('penetration test lib helpers', () => {
         error: null,
         temporalUiUrl: null,
         webhookUrl: null,
-        userId: '',
-        organizationId: '',
-        sandboxId: '',
-        workflowId: '',
-        sessionId: '',
       },
       {
         updatedAt: '2025-02-01T10:00:00Z',
@@ -104,11 +89,6 @@ describe('penetration test lib helpers', () => {
         error: null,
         temporalUiUrl: null,
         webhookUrl: null,
-        userId: '',
-        organizationId: '',
-        sandboxId: '',
-        workflowId: '',
-        sessionId: '',
       },
     ]);
 
