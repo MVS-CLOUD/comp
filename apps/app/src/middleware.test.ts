@@ -24,7 +24,7 @@ describe('Middleware', () => {
   });
 
   describe('Authentication & Basic Access', () => {
-    it('should redirect unauthenticated users to /auth', async () => {
+    it('should allow unauthenticated users through so layouts handle auth', async () => {
       // Arrange - no cookie, no session
       const request = await createMockRequest('/org_123/dashboard');
 
@@ -32,10 +32,7 @@ describe('Middleware', () => {
       const response = await proxy(request);
 
       // Assert
-      expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toBe(
-        'http://localhost:3000/auth?redirectTo=%2Forg_123%2Fdashboard',
-      );
+      expect(response.status).toBe(200);
     });
 
     it('should allow authenticated users to access their org', async () => {
@@ -51,7 +48,6 @@ describe('Middleware', () => {
 
       // Assert
       expect(response.status).toBe(200);
-      expect(response.headers.get('x-pathname')).toBe('/org_123/dashboard');
     });
 
     it('should allow org routes to continue to the layout for access checks', async () => {
@@ -159,7 +155,7 @@ describe('Middleware', () => {
       expect(response.status).toBe(200);
     });
 
-    it('should redirect unauthenticated org routes to /auth', async () => {
+    it('should allow unauthenticated org routes through for server auth checks', async () => {
       // Arrange
       const request = await createMockRequest('/org_123/dashboard');
 
@@ -167,8 +163,7 @@ describe('Middleware', () => {
       const response = await proxy(request);
 
       // Assert
-      expect(response.status).toBe(307);
-      expect(response.headers.get('location')).toContain('/auth');
+      expect(response.status).toBe(200);
     });
 
     it('should allow org routes through when session state is handled later', async () => {

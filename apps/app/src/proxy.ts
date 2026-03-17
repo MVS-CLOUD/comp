@@ -27,14 +27,6 @@ export async function proxy(request: NextRequest) {
       }
     }
 
-    const secureCookieName = '__Secure-better-auth.session_token';
-    const fallbackCookieName = 'better-auth.session_token';
-
-    let sessionToken = request.cookies.get(secureCookieName)?.value;
-    if (!sessionToken) {
-      sessionToken = request.cookies.get(fallbackCookieName)?.value;
-    }
-    const hasToken = Boolean(sessionToken);
     const nextUrl = request.nextUrl;
     const requestHeaders = new Headers(request.headers);
 
@@ -61,22 +53,8 @@ export async function proxy(request: NextRequest) {
       return response;
     }
 
-    // 1. Not authenticated
-    if (!hasToken && nextUrl.pathname !== '/auth') {
-      const url = new URL('/auth', request.url);
-      // Preserve existing search params
-      nextUrl.searchParams.forEach((value, key) => {
-        url.searchParams.set(key, value);
-      });
-      const originalPath = `${nextUrl.pathname}${nextUrl.search}`;
-      if (originalPath !== '/') {
-        url.searchParams.set('redirectTo', originalPath);
-      }
-      return NextResponse.redirect(url);
-    }
-
-    // Org existence and membership checks happen in the app layouts/pages so
-    // users get the proper redirect instead of a raw 403 response from middleware.
+    // Auth checks happen in server layouts/pages so there is only one
+    // source of truth for session validation.
 
     return response;
   } catch (err) {
