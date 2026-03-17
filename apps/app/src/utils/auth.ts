@@ -145,15 +145,16 @@ async function getSession(options: { headers: ReadonlyHeaders | Headers }): Prom
     });
 
     if (!response.ok) {
+      console.error(
+        `[auth] get-session failed: ${response.status} ${response.statusText} (API: ${API_URL})`,
+      );
       return null;
     }
 
     const data = await response.json();
     return data as Session;
   } catch (error) {
-    if (IS_DEVELOPMENT) {
-      console.error('[auth] Failed to get session:', error);
-    }
+    console.error('[auth] Failed to get session:', error);
     return null;
   }
 }

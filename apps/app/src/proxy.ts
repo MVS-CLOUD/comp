@@ -38,20 +38,18 @@ export async function proxy(request: NextRequest) {
     const nextUrl = request.nextUrl;
     const requestHeaders = new Headers(request.headers);
 
-    // Add x-path-name and selected query hints for server components
+    requestHeaders.set('x-pathname', nextUrl.pathname);
+
+    const intent = nextUrl.searchParams.get('intent') || '';
+    if (intent) {
+      requestHeaders.set('x-intent', intent);
+    }
+
     const response = NextResponse.next({
       request: {
         headers: requestHeaders,
       },
     });
-    response.headers.set('x-pathname', nextUrl.pathname);
-    const intent = nextUrl.searchParams.get('intent') || '';
-    if (intent) {
-      // Also forward intent to the request headers so server components can read it
-      requestHeaders.set('x-intent', intent);
-      // Recreate response with updated forwarded headers
-      return NextResponse.next({ request: { headers: requestHeaders } });
-    }
 
     // Allow unauthenticated access to invite routes
     if (nextUrl.pathname.startsWith('/invite/')) {

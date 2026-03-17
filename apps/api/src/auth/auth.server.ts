@@ -54,6 +54,9 @@ function getTrustedOrigins(): string[] {
     'https://portal.staging.trycomp.ai',
     'https://api.staging.trycomp.ai',
     'https://dev.trycomp.ai',
+    'https://compai.mvscloud.com',
+    'https://api.mvscloud.com',
+    'https://portal.mvscloud.com',
   ];
 }
 
