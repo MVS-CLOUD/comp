@@ -1,0 +1,100 @@
+# Comp AI self-host — Helm values (DRAFT, config only; no secrets here)
+# Secrets are injected from Infisical via ESO into the `comp-secrets` Secret (see templates/externalsecret.yaml).
+
+nameOverride: comp
+namespace: comp
+
+# Hostnames fronted by Okta (Traefik forward-auth). Set to real DNS before apply.
+hosts:
+  app: "comp.mvsapps.com"          # operator UI (apps/app, container port 3000)
+  portal: "comp-portal.mvsapps.com" # employee portal (apps/portal, container port 3000)
+
+image:
+  registry: "[PLACEHOLDER — <acct>.dkr.ecr.<region>.amazonaws.com]"
+  app:
+    repository: comp-app
+    tag: "[PLACEHOLDER — image tag/digest]"
+  portal:
+    repository: comp-portal
+    tag: "[PLACEHOLDER — image tag/digest]"
+  pullPolicy: IfNotPresent
+
+# External Secrets Operator
+externalSecrets:
+  enabled: true
+  secretStoreRef:
+    name: infisical-comp
+    kind: SecretStore
+  refreshInterval: "1h"
+  # Infisical project/path that holds the keys referenced in templates/externalsecret.yaml
+  infisicalProjectSlug: "comp-ai"
+  infisicalEnv: "prod"
+  infisicalSecretsPath: "/"
+
+env:
+  # Non-secret config. Secrets come from the `comp-secrets` Secret via envFrom.
+  NEXT_PUBLIC_SELF_HOSTED: "true"   # auto-approves org, bypasses Stripe/booking
+  NODE_ENV: "production"
+  NEXT_PUBLIC_PORTAL_URL: "https://comp-portal.mvsapps.com"
+  TRUST_APP_URL: "https://comp-trust.mvsapps.com"
+  AUTH_TRUSTED_ORIGINS: "https://comp.mvsapps.com,https://comp-portal.mvsapps.com"
+  # BETTER_AUTH_URL / NEXT_PUBLIC_BETTER_AUTH_URL are baked at build time per docker-compose build args;
+  # set runtime overrides here if needed.
+  BETTER_AUTH_URL: "https://comp.mvsapps.com"
+  NEXT_PUBLIC_BETTER_AUTH_URL: "https://comp.mvsapps.com"
+  BETTER_AUTH_URL_PORTAL: "https://comp-portal.mvsapps.com"
+
+app:
+  replicas: 2
+  port: 3000
+  resources:
+    requests: { cpu: "250m", memory: "512Mi" }
+    limits: { cpu: "1", memory: "1Gi" }
+  healthcheck:
+    path: /api/health
+
+portal:
+  replicas: 1
+  port: 3000
+  resources:
+    requests: { cpu: "100m", memory: "256Mi" }
+    limits: { cpu: "500m", memory: "512Mi" }
+  healthcheck:
+    path: /
+
+# Traefik IngressRoute + Okta forward-auth middleware (mirrors nemoclaw-prod/bridge oauth2-proxy pattern).
+ingress:
+  enabled: true
+  entryPoint: websecure
+  forwardAuth:
+    enabled: true
+    middlewareName: okta-forward-auth   # provided by the platform; do NOT define secrets here
+    namespace: comp
+
+# migrate + seed run-once Job (replaces `docker compose run migrator/seeder`)
+migrateSeed:
+  enabled: true
+  # uses the migrator target image; runs prisma migrate then the seed (loads framework primitives + healthcare seed on mvs-comp)
+  image:
+    repository: comp-migrator
+    tag: "[PLACEHOLDER — image tag/digest]"
+
+serviceAccount:
+  create: true
+  name: comp
+  # IRSA role for S3 attachment buckets (KMS-encrypted) if used
+  annotations: {}
+    # eks.amazonaws.com/role-arn: "[PLACEHOLDER — IRSA role ARN]"
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  fsGroup: 1001
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false  # Next.js standalone writes .next cache; mount emptyDir if locking down
+  capabilities:
+    drop: ["ALL"]

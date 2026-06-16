@@ -1,0 +1,35 @@
+{{- if .Values.migrateSeed.enabled }}
+# Run-once Job: prisma migrate then seed (loads framework primitives + the mvs-comp healthcare seed).
+# Replaces `docker compose run --rm migrator` + `--rm seeder`. Apply BEFORE the app/portal Deployments.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.nameOverride }}-migrate-seed
+  namespace: {{ .Values.namespace }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: migrate-seed
+          image: "{{ .Values.image.registry }}/{{ .Values.migrateSeed.image.repository }}:{{ .Values.migrateSeed.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -lc
+            - >
+              bunx prisma migrate deploy --schema=node_modules/@trycompai/db/dist/schema.prisma &&
+              bunx prisma generate --schema=node_modules/@trycompai/db/dist/schema.prisma &&
+              bun packages/db/prisma/seed/seed.js
+          envFrom:
+            - secretRef:
+                name: comp-secrets
+{{- end }}

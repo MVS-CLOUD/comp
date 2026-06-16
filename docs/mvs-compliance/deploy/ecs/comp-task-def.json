@@ -1,0 +1,83 @@
+{
+  "_comment": "DRAFT ECS Fargate task def for the Comp `app` + `portal` containers (matches the in-repo deploy.sh ECS path). NO secret values — secrets come from SSM/Secrets Manager via `secrets[].valueFrom` (mirror Infisical sync to SSM). NEEDS-HUMAN to register + roll the service. Front with ALB OIDC (Okta) or oauth2-proxy.",
+  "family": "comp",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "[PLACEHOLDER — ecsTaskExecutionRole ARN]",
+  "taskRoleArn": "[PLACEHOLDER — comp task role ARN (S3 attachments, KMS)]",
+  "containerDefinitions": [
+    {
+      "name": "app",
+      "image": "[PLACEHOLDER — <acct>.dkr.ecr.<region>.amazonaws.com/comp-app:<tag>]",
+      "essential": true,
+      "command": ["sh", "-lc", "node apps/app/server.js"],
+      "portMappings": [{ "containerPort": 3000, "protocol": "tcp" }],
+      "environment": [
+        { "name": "NEXT_PUBLIC_SELF_HOSTED", "value": "true" },
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "BETTER_AUTH_URL", "value": "https://comp.mvsapps.com" },
+        { "name": "NEXT_PUBLIC_BETTER_AUTH_URL", "value": "https://comp.mvsapps.com" },
+        { "name": "NEXT_PUBLIC_PORTAL_URL", "value": "https://comp-portal.mvsapps.com" },
+        { "name": "TRUST_APP_URL", "value": "https://comp-trust.mvsapps.com" },
+        { "name": "AUTH_TRUSTED_ORIGINS", "value": "https://comp.mvsapps.com,https://comp-portal.mvsapps.com" }
+      ],
+      "secrets": [
+        { "name": "DATABASE_URL", "valueFrom": "[PLACEHOLDER — arn:aws:ssm:...:parameter/comp/DATABASE_URL]" },
+        { "name": "AUTH_SECRET", "valueFrom": "[PLACEHOLDER — .../comp/AUTH_SECRET]" },
+        { "name": "SECRET_KEY", "valueFrom": "[PLACEHOLDER — .../comp/SECRET_KEY]" },
+        { "name": "REVALIDATION_SECRET", "valueFrom": "[PLACEHOLDER — .../comp/REVALIDATION_SECRET]" },
+        { "name": "RESEND_API_KEY", "valueFrom": "[PLACEHOLDER — .../comp/RESEND_API_KEY]" },
+        { "name": "TRIGGER_SECRET_KEY", "valueFrom": "[PLACEHOLDER — .../comp/TRIGGER_SECRET_KEY]" }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"],
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3,
+        "startPeriod": 30
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/comp",
+          "awslogs-region": "[PLACEHOLDER — region]",
+          "awslogs-stream-prefix": "app"
+        }
+      }
+    },
+    {
+      "name": "portal",
+      "image": "[PLACEHOLDER — <acct>.dkr.ecr.<region>.amazonaws.com/comp-portal:<tag>]",
+      "essential": false,
+      "portMappings": [{ "containerPort": 3000, "protocol": "tcp" }],
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "BETTER_AUTH_URL", "value": "https://comp-portal.mvsapps.com" },
+        { "name": "NEXT_PUBLIC_BETTER_AUTH_URL", "value": "https://comp-portal.mvsapps.com" },
+        { "name": "AUTH_TRUSTED_ORIGINS", "value": "https://comp.mvsapps.com,https://comp-portal.mvsapps.com" }
+      ],
+      "secrets": [
+        { "name": "DATABASE_URL", "valueFrom": "[PLACEHOLDER — .../comp/DATABASE_URL]" },
+        { "name": "BETTER_AUTH_SECRET", "valueFrom": "[PLACEHOLDER — .../comp/BETTER_AUTH_SECRET]" },
+        { "name": "RESEND_API_KEY", "valueFrom": "[PLACEHOLDER — .../comp/RESEND_API_KEY]" }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"],
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3,
+        "startPeriod": 30
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/comp",
+          "awslogs-region": "[PLACEHOLDER — region]",
+          "awslogs-stream-prefix": "portal"
+        }
+      }
+    }
+  ]
+}

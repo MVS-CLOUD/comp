@@ -1,0 +1,24 @@
+vendorName,category,phiTouchpoint,isSubProcessor,baaStatus,baaEffective,baaExpiration,priority,registryId,notes
+AWS,infrastructure,Compute/storage/data-center for all PHI systems,true,signed,[PLACEHOLDER],[PLACEHOLDER],done,VEN-001,BAA signed; subservice org carve-out in system description
+Datadog,software_as_a_service,Logs/metrics (scrub PHI),true,signed,[PLACEHOLDER],[PLACEHOLDER],done,VEN-002,BAA signed; ensure PHI scrubbing in pipelines
+Telnyx,software_as_a_service,Voice/SMS,true,signed,[PLACEHOLDER],[PLACEHOLDER],done,VEN-003,BAA signed
+Resend,software_as_a_service,Email (compliance notifications only),true,not-required,[PLACEHOLDER],[PLACEHOLDER],done,VEN-004,No PHI in this channel by policy; documented not-required
+Infisical,infrastructure,Every prod secret (DB URLs vendor keys signing keys),true,unknown,,,P0-overdue,VEN-005,Deadline 2026-06-15 PASSED; decide BAA or OpenBao migration
+DoseSpot,software_as_a_service,Prescriptions med history DEA/EPCS,true,required,,,P0,VEN-008,BAA required; dates null; DoseSpot owns EPCS audit but MVS still needs the BAA
+Surescripts,software_as_a_service,eRx network med history,true,required,,,P0,VEN-009,BAA required; dates null
+Stedi,software_as_a_service,X12 270/271 837 835 (all PHI),true,required,,,P0,VEN-010-NEW,MISSING FROM REGISTRY; live in apps/payer-gateway; add row + execute BAA before DC01 prod traffic
+CloudCasa,infrastructure,Backup of cluster namespaces (PHI ns gated),true,unknown,,,P0,VEN-011-NEW,Catalogic SOC2 Type I only no HIPAA claim; gates PHI-namespace backup (GAP_MATRIX #17a)
+Neon,infrastructure,Managed Postgres (HealthOS PHI + Comp metadata),true,public-only,,,P1,VEN-012-NEW,Execute Scale-plan HIPAA BAA; Comp DB holds compliance metadata not PHI but execute for defensibility
+Vercel,infrastructure,App hosting,true,public-only,,,P1,VEN-013-NEW,Confirm/execute BAA if PHI renders through Vercel
+Medplum,software_as_a_service,FHIR resources,true,required,,,P1,VEN-014-NEW,Confirm BAA for FHIR PHI
+Corti,software_as_a_service,Ambient clinical audio,true,public-only,,,P1,VEN-015-NEW,BAA chase required (audio = PHI)
+Metriport,software_as_a_service,Health information exchange,true,public-only,,,P1,VEN-016-NEW,BAA chase required (HIE = PHI)
+CardScan.ai,software_as_a_service,Insurance card OCR,true,public-only,,,P1,VEN-017-NEW,BAA chase required
+Sentry,software_as_a_service,Error monitoring (scrub PHI),true,public-only,,,P2,VEN-018-NEW,Confirm PHI scrubbing; BAA if PHI in errors
+Langfuse,software_as_a_service,LLM trace observability,true,public-only,,,P2,VEN-019-NEW,Confirm no PHI in traces or BAA
+Okta,software_as_a_service,Identity/SSO,true,public-only,,,P1,VEN-020-NEW,Identity metadata; confirm BAA posture
+Upstash,infrastructure,KV/vector cache,true,public-only,,,P2,VEN-021-NEW,Confirm no PHI cached or BAA
+Wasabi,infrastructure,Object storage cold tier,true,public-only,,,P1,VEN-022-NEW,Retention tier; BAA chase required
+Intercom,software_as_a_service,Support messaging,true,public-only,,,P2,VEN-023-NEW,Confirm no PHI or BAA
+Paubox,software_as_a_service,Encrypted email,true,public-only,,,P2,VEN-024-NEW,Confirm BAA
+Trigger.dev,software_as_a_service,Workflow orchestration (Comp + HealthOS),true,public-only,,,P2,VEN-025-NEW,Confirm no PHI in task payloads or BAA

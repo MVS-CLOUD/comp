@@ -1,0 +1,9 @@
+apiVersion: v2
+name: comp
+description: Self-hosted Comp AI (app + portal) for MVS Cloud on agenthub-prod EKS. DRAFT — config only.
+type: application
+version: 0.1.0
+appVersion: "self-host"
+maintainers:
+  - name: "[PLACEHOLDER — Platform/Security Lead]"
+    email: "security@mvscloud.com"
